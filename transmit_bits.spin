@@ -10,7 +10,7 @@ PUB init(symbol_rate,pin)
   ctra := calc_ctr(CM_PLLINT,PLLD_1_8,0,0) 
   vscl := calc_vcsl(1,32)
   vcfg := calc_vcfg2(pin)
-  dira := $00FF0000
+  dira[pin] := 1
   return
 
 PUB divround(x,y)
