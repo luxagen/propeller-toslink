@@ -1,9 +1,13 @@
 CON
-  ADV_MASK = 1
+
+VAR
+  long interval
+  long int_inv
 
 PUB init(symbol_rate,pin)
+  interval := CLKFREQ/1
+  int_inv := interval/256
   dira[16..23] := $FF
-  dira &= !ADV_MASK
 
 PUB send(data)
   send2(data)
@@ -12,7 +16,7 @@ PUB send(data)
   send2(data>>24)
   
 PUB send2(data)
-  outa[16..23] := data
-  waitpeq(0,ADV_MASK,0)
-  waitpeq(ADV_MASK,ADV_MASK,0)
-'  waitcnt(clkfreq+cnt)
+  outa[23..16] := !data
+  waitcnt(int_inv+cnt)
+  outa[23..16] := data
+  waitcnt(interval-int_inv+cnt)

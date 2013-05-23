@@ -2,10 +2,10 @@ CON
   _clkmode = xtal1+pll16x
   _xinfreq=5000000
 
-  SPD_SR = 1                    ' Sample rate
+  SPD_SR = 48000                ' Sample rate
   SPD_CR = SPD_SR*128           ' Symbol rate
 
-  ARRLEN=2
+  ARRLEN=384
 
   preamble_b=%00010111
   preamble_m=%01000111
@@ -24,32 +24,43 @@ preambles     word      %0010011100010111,%0010011101000111[95]                 
 }
 
 OBJ
-  xmit : "transmit_bits_fake"
+  xmit : "transmit_bits"
+'  xmit : "transmit_bits_fake"
 
 VAR
   long list[ARRLEN]
 
-PUB Main | idx,vmode,symbol_rate,pin
+DAT
+  frame long -1
 
-'  longfill(@list,0,ARRLEN)
-'  list[0] := %110011001100110011001101_00000000
-'  list[1] := %00110010_110011001100110011001100
+PUB Main | patternA,patternB,idx
 
-  list[0] := 1
-  list[1] := 0
+  patternA := %110011001100110011001101_00000000
+  patternB := %00110010_110011001100110011001100
 
-  xmit.init(1000,16)
+  init_array(@list,192,patternA,patternB)
 
-  idx:=0
-  repeat
-    xmit.send(list[0]|get_preamble(idx))
-    xmit.send(list[1])
-    idx := (idx+1)//ARRLEN
+  xmit.init(SPD_CR,16)
 
-PUB get_preamble(idx)
-  ifnot idx//192
+'  repeat
+'    xmit.send(list[0]|get_preamble)
+'    xmit.send(list[1])
+
+  xmit.loop(@list,ARRLEN)
+
+PUB get_preamble
+  ++frame
+
+  ifnot frame//192
     return preamble_b
-  elseif idx&1
+  elseif frame&1
     return preamble_w
   else
     return preamble_m
+
+PUB init_array(array,length,patternA,patternB) | idx
+  idx:=0
+  repeat while idx<384
+    long[array][idx++] := patternA|get_preamble
+    long[array][idx++] := patternB
+  
