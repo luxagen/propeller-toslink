@@ -1,4 +1,11 @@
-PUB SetUpVid(symbol_rate,pin)
+CON
+  #0,CM_DISABLE,CM_PLLINT,CM_PLL,CM_PLLD,CM_NCO,CM_NCOD,CM_DUTY,CM_DUTYD,CM_POS,CM_POSF,CM_RISE,CM_RISEF,CM_NEG,CM_NEGF,CM_FALL,CM_FALLF
+
+  #0,PLLD_1_8,PLLD_1_4,PLLD_1_2,PLLD_1,PLLD_2,PLLD_4,PLLD_8,PLLD_16
+
+  #0,VM_NONE,VM_VGA,VM_COMP_BASELOW,VM_COMP_BASEHIGH
+
+PUB init(symbol_rate,pin)
   frqa := calc_frq(symbol_rate)
   ctra := calc_ctr(CM_PLLINT,PLLD_1_8,0,0) 
   vscl := calc_vcsl(1,32)
@@ -32,3 +39,6 @@ PUB calc_vcfg2(pin) | vgroup,subgroup
     abort VM_NONE
 
   return calc_vcfg(VM_COMP_BASELOW+subgroup,0,0,0,0,vgroup,1<<pin)
+
+PUB send(data)
+    waitvid($07_00,data)
