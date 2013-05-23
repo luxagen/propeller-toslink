@@ -1,0 +1,5 @@
+- use 4-colour mode on video generator with straightforward palette using pins 0-1 of the vgroup
+- get two frames from main memory at once
+- each 8 -> 16 BMC encoding step generates 16 bits per channel
+- interleave the resulting bits into one word and deliver with a single waitvid
+- blocks/preambles on two streams are synchronous, but subcodes can be different (even 1 AES and one S/PDIF!)
