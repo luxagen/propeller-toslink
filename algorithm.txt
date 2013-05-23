@@ -1,0 +1,61 @@
+parameters:
+[IN] input_frame ' pre-formatted 31-bit S/PDIF frame with subcodes and parity, but not preamble
+
+variables:
+frame
+signal ' MSb will be starting state for BMC, but who cares
+counter = 191
+
+' start with BMC_table copied from main memory
+
+' initialise PLLA and video generator here
+
+: loop
+
+read long from [input_frame] -> frame
+
+' ==========
+
+look up frame[0..7] -> signal[0..15]
+
+inc counter
+if counter==192
+	mov signal[0..7],preamble_Z
+	counter=0
+else if counter&1
+	mov signal[0..7],preamble_Y
+else
+	mov signal[0..7],preamble_X
+
+if signal[31], invert signal
+
+' ==========
+
+look up frame[8..15] -> signal[16..31]
+if signal[15], invert signal[16..31]
+
+' ==========
+
+waitvid palette,signal
+
+' ==========
+
+look up frame[16..23] -> signal[0..15]
+if signal[31], invert signal ' MSb was preserved from the word we just output
+
+' ==========
+
+look up frame[24..31] -> signal[16..31]
+if signal[15], invert signal[16..31]
+
+' ==========
+
+waitvid palette,signal
+
+jmp :loop
+
+' ==========
+
+' around 120 cycles (1 microsecond @ 32.768 MHz) to generate one stereo sample
+' in theory, this could therefore run at a 1.092266 MHz sample-rate
+' the input cog has 16 cycles per bit coming in, so perhaps could be written in Spin?
