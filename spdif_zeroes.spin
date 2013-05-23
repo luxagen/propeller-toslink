@@ -24,7 +24,7 @@ preambles     word      %0010011100010111,%0010011101000111[95]                 
 }
 
 OBJ
-  xmit : "transmit_bits"
+  xmit : "transmit_bits_fake"
 
 VAR
   long list[ARRLEN]
