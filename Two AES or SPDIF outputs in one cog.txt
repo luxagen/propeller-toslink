@@ -3,3 +3,7 @@
 - each 8 -> 16 BMC encoding step generates 16 bits per channel
 - interleave the resulting bits into one word and deliver with a single waitvid
 - blocks/preambles on two streams are synchronous, but subcodes can be different (even 1 AES and one S/PDIF!)
+
+===
+
+a single cog should also be able to sample the 4-channel bitstream
