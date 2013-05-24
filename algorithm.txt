@@ -1,10 +1,15 @@
 parameters:
-[IN] input_frame ' pre-formatted 31-bit S/PDIF frame with subcodes and parity, but not preamble
+[IN] hub long* src ' address of 24-bit sample
+'[IN] hub word* bmc_table ' address of LUT of BMC patterns for prior 0 and a byte of data - store this above 496 longs in application image to prevent copying to cog when assembly is started
+
+[IN] local word bmc_table[256] ' address of LUT of BMC patterns for prior 0 and a byte of data
+[IN] local long subcodes[12] ' UC pairs for each of 192 frames in a block, stored (from LSb) U0 C0 U1 C1...
 
 variables:
 frame
+temp
 signal ' MSb will be starting state for BMC, but who cares
-counter = 191
+counter = 1
 
 ' start with BMC_table copied from main memory
 
@@ -12,26 +17,82 @@ counter = 191
 
 : loop
 
-read long from [input_frame] -> frame
+' get new sample and shift into position 1 higher than we want
+rdlong frame,src
+shl frame,#5
+or frame,#$20000000 ' append V bit 
+
+' get UC bits into 'temp' here
+
+' add U and C bits, storing parity of result
+shl temp,#30
+or frame,temp wc
+
+rcr frame,#1 ' shift frame into correct position, inserting parity into P bit
 
 ' ==========
 
-look up frame[0..7] -> signal[0..15]
+' read the bmc_table entry containing the 16-bit pattern for frame[0..7]
+mov temp,frame
+and temp,#$0FF
+ror temp,1 wc ' generate the number of the register we want from the BMC table
+add temp,@bmc_table ' temp now contains the register number of the entry we want
+movs :read_bmc0,temp ' modify the read instruction
+nop ' this is here to delay fetching of the next instruction until after the previous one changed it
+:read_bmc0	mov temp,0-0 ' will be modified to read correct entry
 
-inc counter
-if counter==192
-	mov signal[0..7],preamble_Z
-	counter=0
-else if counter&1
-	mov signal[0..7],preamble_Y
-else
-	mov signal[0..7],preamble_X
+' select the correct subentry and zero the rest of temp
+if_c shr temp,#16
+if_nc and temp,word_mask
 
-if signal[31], invert signal
+' temp's lower half now contains the 16-bit BMC pattern we want
+
+' worst case 32 cycles
+
+rcl signal,#1 wc ' store MSb of previous signal block in carry flag to propagate BMC state
+mov signal,temp ' start with decoded 16-bit pattern for low byte
 
 ' ==========
 
-look up frame[8..15] -> signal[16..31]
+' insert the correct preamble for this frame
+add counter,#-1 wz
+if_nz jmp :preamble_xy
+mov counter,#192
+or signal,preamble_Z
+jmp :preamble_done
+:preamble_xy
+test counter,#1 wz
+if_z or signal,preamble_X
+if_nz or signal,preamble_Y
+:preamble_done
+
+if_c xor signal,word_mask ' invert the pattern if previous state was high
+
+' ==========
+
+' z flag should be set to previous state here
+test temp,mask_bit15 wz
+
+HERE
+
+' read the bmc_table entry containing the 16-bit pattern for frame[8..15]
+mov temp,frame
+shr temp,8
+and temp,#$0FF
+ror temp,1 wc ' generate the number of the register we want from the BMC table
+add temp,@bmc_table ' temp now contains the register number of the entry we want
+movs :read_bmc1,temp ' modify the read instruction
+nop ' this is here to delay fetching of the next instruction until after the previous one changed it
+:read_bmc1	mov temp,0-0 ' will be modified to read correct entry
+' invert pattern according to previous state
+if_z neg temp,temp
+if_z sub temp,1
+' select the correct subentry and zero the rest of temp
+if_nc shl temp,#16
+if_c andn temp,word_mask
+
+' temp's upper half now contains the 16-bit BMC pattern we want
+test
 if signal[15], invert signal[16..31]
 
 ' ==========
