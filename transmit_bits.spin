@@ -31,7 +31,7 @@ CON
 
 PUB init(symbol_rate,pin)
   frqa := calc_frq(symbol_rate)
-  ctra := calc_ctr(CM_PLLINT,PLLD_1,0,0) 
+  ctra := calc_ctr(CM_PLLINT,PLLD_1_8,0,0) 
   vscl := calc_vcsl(1,32)
   vcfg := calc_vcfg2(pin)
   dira[pin] := 1
@@ -55,8 +55,8 @@ PUB divround(x,y)
   return (x + y/2)/y
 
 PUB calc_frq(rate_hz) | cf_up
-  cf_up:=divround(CLKFREQ,65536)
-  return divround(65536*rate_hz,cf_up)
+  cf_up:=divround(CLKFREQ,|<18)
+  return divround(rate_hz<<14,cf_up)
 
 PUB calc_ctr(mode,plldiv,apin,bpin)
   return ((mode << 3 + plldiv) << 14 + bpin) << 9 + apin

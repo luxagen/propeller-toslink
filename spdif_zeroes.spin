@@ -40,8 +40,6 @@ PUB Main | patternA,patternB,idx
 
   init_array(@list,192,patternA,patternB)
 
-  dira[28]:=1
-  outa[28]:=0
   xmit.init(SPD_CR,16)
 
 '  repeat
