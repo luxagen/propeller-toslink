@@ -1,0 +1,29 @@
+loop:
+	1. wait for clock line to go pre-edge
+	2. wait for clock line to go post-edge
+	3. sample data line
+	4. shift into register
+	5. decrement bit counter
+	6. if bit counter==0, reset to 16 and break
+
+1. shl sample,12
+2. set valid bit
+3. set user and control bits from subcode buffer
+4. set parity bit
+5. write to frame-sink (main memory)
+
+---
+
+at 32.768 MHz, we have a budget of 16 cycles for each bit read
+BUT we're only paying attention to the first two channels
+so there's actually an extra 512 cycles to process each stereo sample into a pair of S/PDIF frames
+
+SO:
+loop:
+	1. wait for mpx=00
+	2. unroll loop (x 32):
+		1. wait for clock pre-edge
+		2. wait for clock post-edge
+		3. sample data
+		4. shift into register
+	3. do other stuff
