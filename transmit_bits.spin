@@ -1,26 +1,5 @@
-{
 DAT
-  buffer long
-  bufbytes long
-  counter long
-  address long
-  palette long
-  half_frame long
-        org 0
-loop_asm
-        mov counter,#0
-
-:loop   mov address,buffer
-        add address,counter
-        rdlong half_frame,address
-        waitvid palette,half_frame
-        add counter,4
-        cmpsub counter,bufbytes
-        jmp #:loop                
-'  counter := 0
-'  repeat
-'    waitvid($07_00,long[array][counter++ // length])
-}
+        frame long -1
 
 CON
   #0,CM_DISABLE,CM_PLLINT,CM_PLL,CM_PLLD,CM_NCO,CM_NCOD,CM_DUTY,CM_DUTYD,CM_POS,CM_POSF,CM_RISE,CM_RISEF,CM_NEG,CM_NEGF,CM_FALL,CM_FALLF
@@ -29,9 +8,13 @@ CON
 
   #0,VM_NONE,VM_VGA,VM_COMP_BASELOW,VM_COMP_BASEHIGH
 
+  preamble_b=%00010111
+  preamble_m=%01000111
+  preamble_w=%00100111
+
 PUB init(symbol_rate,pin)
   frqa := calc_frq(symbol_rate)
-  ctra := calc_ctr(CM_PLLINT,PLLD_1_8,0,0) 
+  ctra := calc_ctr(CM_PLLINT,PLLD_1,0,0) 
   vscl := calc_vcsl(1,32)
   vcfg := calc_vcfg2(pin)
   dira[pin] := 1
@@ -41,20 +24,17 @@ PUB send(data)
     waitvid($07_00,data)
 
 PUB loop(array,length) | counter
-'  palette:=$07_00
-'  buffer:=array
-'  bufbytes := 4*length
-'  loop_asm
   counter := 0
   repeat
-    waitvid($07_00,long[array][counter])
-    ++counter
+    waitvid($07_00,long[array][counter++])
+    waitvid($07_00,get_preamble|long[array][counter++])
     counter//=length
 
 PUB divround(x,y)
-  return (x + y/2)/y
+  return (x + (y/2))/y
 
 PUB calc_frq(rate_hz) | cf_up
+  ' calculate 2^32 * rate_hz/clkfreq
   cf_up:=divround(CLKFREQ,|<18)
   return divround(rate_hz<<14,cf_up)
 
@@ -77,3 +57,13 @@ PUB calc_vcfg2(pin) | vgroup,subgroup
     abort VM_NONE
 
   return calc_vcfg(VM_COMP_BASELOW+subgroup,0,0,0,0,vgroup,1<<pin)
+
+PRI get_preamble
+  ++frame
+
+  ifnot frame//384
+    return preamble_b
+  elseif frame&1
+    return preamble_w
+  else
+    return preamble_m

@@ -1,0 +1,12 @@
+
+
+- fused some of the Prop's upper pins high with experiments
+- then found that 60 ohms wasn't enough - brownout protection would kill it after half a second because of excessive draw
+- tried 90 ohms and that was stable with confirmed signalling on pin 15
+
+
+EXTERNAL INTERFACE
+- one phono for S/PDIF
+- one TOSLINK socket
+- one rocker/throw switch to select 32 kHz or 96 kHz
+- one break-on-push button for interrupting power
