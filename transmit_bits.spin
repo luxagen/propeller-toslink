@@ -35,7 +35,12 @@ _outcog2
         mov vscl,vscl_vid
         mov vcfg,vcfg_vid
 
-        or dira,led_mask
+        mov temp,par
+        add temp,#16
+        rdlong temp,temp
+        or dira,temp
+        or outa,temp
+'        or dira,out_mask
 '        or outa,led_mask
 
 ':loop
@@ -61,14 +66,21 @@ _outcog2
         or temp,#$AA
         shl temp,#8
         or temp,#$AA
+
+        mov temp,#1
+        test temp,#1 wc
+        rcr temp,#16
+        rcr temp,#16
+
+        mov temp,#$0F
 :loop
         waitvid palette,temp
-        jmp :loop         
+        jmp #:loop         
 
         frame long -1
         temp long
 
-        palette long $AA_55
+        palette long $FF_00
         zeroes long 0
 '        data1 long %00000000_00000000_11111111_11111111
 '        data2 long %00000000_11111111_00000000_11111111
@@ -78,12 +90,15 @@ _outcog2
         frqa_tone long 53
         ctra_tone long %0_00101_000_00000000_010110_000_010111
 
+        ' run the NCO at the intended output frequency of ~5 MHz - the PLL will multiply this to ~90 MHz, and the
+        ' PLLDIV field will divide back to the intended rate
         frqa_vid long 303063888
-        ctra_vid long %0_00001_000_00000000_000000_000_000000 
-        vscl_vid long ((1 << 12) | 32)<<4
-        vcfg_vid long %0_01_0_0_0_011_00000000000_001_0_11111111
+        ctra_vid long %0_00001_011_00000000_000000_000_000000 
+        vscl_vid long ((1 << 12) | 32)<<7 ' the 7 slows it to the audio rate for testing
+        
+        vcfg_vid long %0_01_0_0_0_000_00000000000_001_0_11111111
 
-        led_mask long $0000FF00
+        out_mask long $0000FF00
 
         counter long 1
 
@@ -104,17 +119,14 @@ PUB write(subframeA,subframeB)
   subframes[1] := subframeB
 
 PUB start(carrier_rate,pin)
-  init2(carrier_rate,pin)
-  cognew(@_outcog2,@_frqa)
-
-' /////////////////////////////////
-
-PRI init2(symbol_rate,pin)
-  _frqa := calc_frq(symbol_rate)
+  _frqa := calc_frq(carrier_rate)
   _ctra := calc_ctr(CM_PLLINT,PLLD_1,0,0) 
   _vscl := calc_vscl(1,32)
   _vcfg := calc_vcfg2(pin)
   _pinmask := |<pin
+  cognew(@_outcog2,@_frqa)
+
+' /////////////////////////////////
 
 PRI divround(x,y)
   return (x + (y/2))/y

@@ -30,7 +30,7 @@ PUB Main | patternA,patternB,idx
   patternB := %00000000_010101010101_001001001001
 
   xmit.write(patternA,patternB)
-  xmit.start(4000,LED_RED)
+  xmit.start(4000,LED_BLUE)
 
 PUB get_preamble
   ++frame
