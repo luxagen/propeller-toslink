@@ -38,39 +38,31 @@ _outcog2
         or dira,led_mask
 '        or outa,led_mask
 
-:loop
-        mov temp,data1
-
+':loop
+'        mov temp,data1
+        mov temp,#preamble_Z
+{
         sub counter,#1 wz
         if_nz jmp :preamble_xy
         mov counter,#192
-        or temp,preamble_Z
+        or temp,#preamble_Z
         jmp :preamble_done
         :preamble_xy
         test counter,#1 wz
-        if_z or temp,preamble_X
-        if_nz or temp,preamble_Y
+        if_z or temp,#preamble_X
+        if_nz or temp,#preamble_Y
         :preamble_done
+ }
 
+        mov temp,#$AA
+        shl temp,#8
+        or temp,#$AA
+        shl temp,#8
+        or temp,#$AA
+        shl temp,#8
+        or temp,#$AA
+:loop
         waitvid palette,temp
-        waitvid palette,data2
-'jmp :loop
-        'waitvid palette,data1
-'        waitvid palette,#%1011
-'        waitvid palette,#0
-'        waitvid palette,#0
-'        waitvid palette,#0
-'        waitvid palette,#0
-'        waitvid palette,#0
-'        waitvid palette,#0
-'        waitvid palette,#0
-'        waitvid palette,#0
-'        waitvid palette,#0
-'        waitvid palette,#0
-'        waitvid palette,#0
-'        waitvid palette,#0
-'        waitvid palette,#0
-'        waitvid palette,#0
         jmp :loop         
 
         frame long -1
@@ -86,9 +78,9 @@ _outcog2
         frqa_tone long 53
         ctra_tone long %0_00101_000_00000000_010110_000_010111
 
-        frqa_vid long 303052892
+        frqa_vid long 303063888
         ctra_vid long %0_00001_000_00000000_000000_000_000000 
-        vscl_vid long ((1 << 12) | 32)
+        vscl_vid long ((1 << 12) | 32)<<4
         vcfg_vid long %0_01_0_0_0_011_00000000000_001_0_11111111
 
         led_mask long $0000FF00
@@ -111,24 +103,8 @@ PUB write(subframeA,subframeB)
   subframes[0] := subframeA
   subframes[1] := subframeB
 
-{
-PRI _outcog(carrier_rate,pin) | tempA,tempB
-  frqa := _frqa
-  ctra := _ctra
-  vscl := _vscl
-  vcfg := _vcfg
-  dira |= _pinmask
-
-  repeat
-    tempA := subframes[0]
-    tempB := subframes[1]
-    waitvid($07_00,tempA)'get_preamble|tempA)
-    waitvid($07_00,tempB)
-}
-
 PUB start(carrier_rate,pin)
   init2(carrier_rate,pin)
-'  cognew(_outcog(carrier_rate,pin),@oc_stack)
   cognew(@_outcog2,@_frqa)
 
 ' /////////////////////////////////
@@ -136,7 +112,7 @@ PUB start(carrier_rate,pin)
 PRI init2(symbol_rate,pin)
   _frqa := calc_frq(symbol_rate)
   _ctra := calc_ctr(CM_PLLINT,PLLD_1,0,0) 
-  _vscl := calc_vcsl(1,32)
+  _vscl := calc_vscl(1,32)
   _vcfg := calc_vcfg2(pin)
   _pinmask := |<pin
 
@@ -151,7 +127,7 @@ PRI calc_frq(rate_hz) | cf_up
 PRI calc_ctr(mode,plldiv,apin,bpin)
   return ((mode << 3 + plldiv) << 14 + bpin) << 9 + apin
 
-PRI calc_vcsl(pclks,fclks)
+PRI calc_vscl(pclks,fclks)
   return pclks<<12 | fclks
 
 PRI calc_vcfg(vmode,cmode,chroma1,chroma0,auralsub,vgroup,vpins)
