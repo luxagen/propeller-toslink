@@ -25,78 +25,75 @@ _outcog2
         or dira,temp ' set pin direction
 }
 
-        mov frqa,frqa_preset
-        mov ctra,ctra_preset
-'        mov vscl,vscl_preset
-'        mov vcfg,vcfg_preset
-
-        mov temp,#1
-        shl temp,#8
-        sub temp,#1
-        shl temp,#16
-        or dira,temp
-'        or outa,temp
-
-        :bizzle
-{        mov temp,#0
-        mov phsa,temp
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        sub temp,#1
-        mov phsa,temp
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-}        jmp :bizzle
-
-'        or outa,temp
-'        jmp #_outcog2
 {
-        mov temp,#1
-        shl temp,#14
+        mov frqa,frqa_tone
+        mov ctra,ctra_tone
+ }       
 
-        or dira,temp
-        or outa,temp
+        mov frqa,frqa_vid
+        mov ctra,ctra_vid
+        mov vscl,vscl_vid
+        mov vcfg,vcfg_vid
 
-        jmp #_outcog2
-}
-        ' set up pattern
-        mov data,#1
-        shl data,#16
-        sub data,#1
+        or dira,led_mask
+'        or outa,led_mask
 
-        ' set up palette
-        mov palette,#$FF
-        shl palette,8
+:loop
+        mov temp,data1
 
-:loop   waitvid palette,data
+        sub counter,#1 wz
+        if_nz jmp :preamble_xy
+        mov counter,#192
+        or temp,preamble_Z
+        jmp :preamble_done
+        :preamble_xy
+        test counter,#1 wz
+        if_z or temp,preamble_X
+        if_nz or temp,preamble_Y
+        :preamble_done
+
+        waitvid palette,temp
+        waitvid palette,data2
+'jmp :loop
+        'waitvid palette,data1
+'        waitvid palette,#%1011
+'        waitvid palette,#0
+'        waitvid palette,#0
+'        waitvid palette,#0
+'        waitvid palette,#0
+'        waitvid palette,#0
+'        waitvid palette,#0
+'        waitvid palette,#0
+'        waitvid palette,#0
+'        waitvid palette,#0
+'        waitvid palette,#0
+'        waitvid palette,#0
+'        waitvid palette,#0
+'        waitvid palette,#0
+'        waitvid palette,#0
         jmp :loop         
 
         frame long -1
         temp long
 
-        palette long
-        data long
+        palette long $AA_55
+        zeroes long 0
+'        data1 long %00000000_00000000_11111111_11111111
+'        data2 long %00000000_11111111_00000000_11111111
+        data1 long %00110011_00110011_00110101_00000000
+        data2 long %00110011_00110011_00110011_00110011
 
-        frqa_preset long 53'27487791
-        ctra_preset long %0_00101_000_00000000_010110_000_010111 
-        vscl_preset long (1 << 12) | 32   
-        vcfg_preset long %0_01_0_0_0_000_00000000000_010_0_11111111
+        frqa_tone long 53
+        ctra_tone long %0_00101_000_00000000_010110_000_010111
+
+        frqa_vid long 303052892
+        ctra_vid long %0_00001_000_00000000_000000_000_000000 
+        vscl_vid long ((1 << 12) | 32)
+        vcfg_vid long %0_01_0_0_0_011_00000000000_001_0_11111111
+
+        led_mask long $0000FF00
+
+        counter long 1
 
         fit 496
 CON
@@ -106,14 +103,15 @@ CON
 
   #0,VM_NONE,VM_VGA,VM_COMP_BASELOW,VM_COMP_BASEHIGH
 
-  preamble_b=%00010111
-  preamble_m=%01000111
-  preamble_w=%00100111
+  preamble_Z=%00010111
+  preamble_Y=%00100111
+  preamble_X=%01000111
 
 PUB write(subframeA,subframeB)
   subframes[0] := subframeA
   subframes[1] := subframeB
 
+{
 PRI _outcog(carrier_rate,pin) | tempA,tempB
   frqa := _frqa
   ctra := _ctra
@@ -126,6 +124,7 @@ PRI _outcog(carrier_rate,pin) | tempA,tempB
     tempB := subframes[1]
     waitvid($07_00,tempA)'get_preamble|tempA)
     waitvid($07_00,tempB)
+}
 
 PUB start(carrier_rate,pin)
   init2(carrier_rate,pin)
@@ -173,8 +172,8 @@ PRI get_preamble
   ++frame
 
   ifnot frame//384
-    return preamble_b
+    return preamble_Z
   elseif frame&1
-    return preamble_w
+    return preamble_Y
   else
-    return preamble_m
+    return preamble_X
