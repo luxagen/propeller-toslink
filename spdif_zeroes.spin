@@ -15,8 +15,8 @@ CON
   LED_RED=14
    
 OBJ
-'  xmit : "transmit_bits"
-  xmit : "transmit_bits_fake"
+  xmit : "transmit_bits"
+'  xmit : "transmit_bits_fake"
 
 VAR
 '  long list[ARRLEN]
@@ -26,11 +26,11 @@ DAT
 
 PUB Main | patternA,patternB,idx
 
-  patternA := %001100110011001100110101_00000000
-  patternB := %00110011_001100110011001100110011
+  patternA := %000100010001_000001000001_00000000
+  patternB := %00000000_010101010101_001001001001
 
   xmit.write(patternA,patternB)
-  xmit.start(SPD_CR,LED_BLUE)
+  xmit.start(4000,LED_RED)
 
 PUB get_preamble
   ++frame
