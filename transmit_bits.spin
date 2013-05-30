@@ -48,73 +48,119 @@ _outcog2
 
                         mov sample,sample1
 
-                        ' ENCODE HALF OF sample INTO temp HERE
-                        mov pattern,data1a
+                        ' ////////
+
+                        mov pattern,preamble
+                        xor pattern,data1a
                         and pattern,mask_low16
-                        xor pattern,preamble
-                        mov subframe,pattern
-{
+
                         ' read the bmc_table entry containing the 16-bit pattern for frame[0..7]
-                        mov temp,sample
-                        and temp,#$FF
-                        ror temp,1 wc ' generate the number of the register we want from the BMC table
-                        add temp,@bmc_table ' temp now contains the register number of the entry we want
-                        movs $+2,temp ' modify the read instruction
-                        test pattern,mask_bit31 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
-                        mov pattern,0-0 ' will be modified to read correct entry
-                        xor pattern,preamble_xor ' remove BMC pattern from preamble zone and replace with actual preamble
-                        if_z xor pattern,all_ones ' invert pattern according to previous finish state
-                        ' select the correct subentry and zero the rest
-                        if_nc and pattern,low_word_mask
-                        if_c shr pattern,#16                         
- }
-                        mov pattern,data1a
+'                        mov temp,sample
+'                        call #bmc_encode_lower
+
+                        mov subframe,pattern
+
+                        ' ////////
+
+                        mov pattern,#0
+                        xor pattern,data1a
                         andn pattern,mask_low16
+
                         or subframe,pattern
  
+                        ' ////////
+
                         waitvid palette,subframe
 
-                        ' ENCODE HALF OF sample INTO temp HERE
-                        mov pattern,data1b
+                        ' //////////////////////////////////////////////////////
+
+                        mov pattern,#0
+                        xor pattern,data1b
                         and pattern,mask_low16
+
                         mov subframe,pattern
 
-                        mov pattern,data1b
+                        ' ////////
+
+                        mov pattern,#0
+                        xor pattern,data1b
                         andn pattern,mask_low16
+
                         or subframe,pattern
 
+                        ' ////////
+
                         waitvid palette,subframe
+
+                        ' //////////////////////////////////////////////////////
 
                         mov preamble,#preamble_Y_xor ' output Y preamble unconditionally on every odd frame
 
-                        ' ENCODE HALF OF sample INTO temp HERE
-                        mov pattern,data2a
+                        mov sample,sample2
+
+                        ' ////////
+
+                        mov pattern,preamble
+                        xor pattern,data2a
                         and pattern,mask_low16
-                        xor pattern,preamble
+
                         mov subframe,pattern
 
-                        mov pattern,data2a
+                        ' ////////
+
+                        mov pattern,#0
+                        xor pattern,data2a
                         andn pattern,mask_low16
+
                         or subframe,pattern 
+
+                        ' ////////
 
                         waitvid palette,subframe
 
-                        ' ENCODE HALF OF sample INTO temp HERE
-                        mov pattern,data2b
+                        ' //////////////////////////////////////////////////////
+
+                        mov pattern,#0
+                        xor pattern,data2b
                         and pattern,mask_low16
+
                         mov subframe,pattern
 
-                        mov pattern,data2b
+                        ' ////////
+
+                        mov pattern,#0
+                        xor pattern,data2b
                         andn pattern,mask_low16
+
                         or subframe,pattern
+
+                        ' ////////
 
                         waitvid palette,subframe
                  
+                        ' //////////////////////////////////////////////////////
+
                         mov preamble,#preamble_X_xor ' output X preamble for every even frame except frame 0
 
                 djnz counter,#:frame_loop         
                  
                 jmp #:block_loop
+
+' parameters:
+'       temp:           low byte is what to encode
+'       subframe:       upper 16 bits contains the result of the preceding bmc_encode_upper
+'       pattern:        contains either 0 or a preamble_xor code
+bmc_encode_lower        and temp,#$FF
+                        ror temp,1 wc ' generate the number of the register we want from the BMC table
+                        add temp,@bmc_table ' temp now contains the register number of the entry we want
+                        movs $+2,temp ' modify the read instruction
+                        test subframe,mask_bit31 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
+                        xor pattern,0-0 ' will be modified to read correct entry
+                        if_z xor pattern,mask_ones ' invert pattern according to previous finish state
+                        ' select the correct subentry and zero the rest
+                        if_nc and pattern,mask_low16
+                        if_c shr pattern,#16
+bmc_encode_lower_ret ret
 
         data1a long %001101010011001100110011_00110011'^$33
         data1b long %00110011_001100110011001100110011'^$33
@@ -182,6 +228,7 @@ bmc_table
 
 mask_low16 long $0000FFFF
 mask_bit31 long $80000000
+mask_ones long $FFFFFFFF
 
         ' uninitialised assembly variables
         out_mask res 1
