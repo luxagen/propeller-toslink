@@ -50,24 +50,24 @@ _outcog2
                         mov sample,sample1
 
                         ' ENCODE HALF OF sample INTO temp HERE
-                        mov temp,data1a
-                        and temp,mask_low16
-                        xor subframe,temp
+                        mov pattern,data1a
+                        and pattern,mask_low16
+                        xor subframe,pattern
 
-                        mov temp,data1a
-                        andn temp,mask_low16
-                        or subframe,temp
+                        mov pattern,data1a
+                        andn pattern,mask_low16
+                        or subframe,pattern
  
                         waitvid palette,subframe
 
                         ' ENCODE HALF OF sample INTO temp HERE
-                        mov temp,data1b
-                        and temp,mask_low16
-                        mov subframe,temp
+                        mov pattern,data1b
+                        and pattern,mask_low16
+                        mov subframe,pattern
 
-                        mov temp,data1b
-                        andn temp,mask_low16
-                        or subframe,temp
+                        mov pattern,data1b
+                        andn pattern,mask_low16
+                        or subframe,pattern
 
                         waitvid palette,subframe
 
@@ -75,24 +75,24 @@ _outcog2
                         mov subframe,#preamble_Y_xor ' output Y preamble unconditionally on every odd frame
 
                         ' ENCODE HALF OF sample INTO temp HERE
-                        mov temp,data2a
-                        and temp,mask_low16
-                        xor subframe,temp
+                        mov pattern,data2a
+                        and pattern,mask_low16
+                        xor subframe,pattern
 
-                        mov temp,data2a
-                        andn temp,mask_low16
-                        or subframe,temp 
+                        mov pattern,data2a
+                        andn pattern,mask_low16
+                        or subframe,pattern 
 
                         waitvid palette,subframe
 
                         ' ENCODE HALF OF sample INTO temp HERE
-                        mov temp,data2b
-                        and temp,mask_low16
-                        mov subframe,temp
+                        mov pattern,data2b
+                        and pattern,mask_low16
+                        mov subframe,pattern
 
-                        mov temp,data2b
-                        andn temp,mask_low16
-                        or subframe,temp
+                        mov pattern,data2b
+                        andn pattern,mask_low16
+                        or subframe,pattern
 
                         waitvid palette,subframe
                  
@@ -176,6 +176,7 @@ mask_bit31 long $80000000
         subframe res 1
         sample res 1
         temp res 1
+        pattern res 1
 
         fit 496
 CON
