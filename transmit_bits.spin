@@ -37,8 +37,11 @@ _outcog2
 
         ' 192 kHz BUDGET IS 104 CLOCKS PER WAITVID, i.e. ABOUT 26 INSTRUCTIONS
 
+        mov subframe,#0
+
         :block_loop
                 mov counter,#192
+                test subframe,mask_bit31 wz ' store the MSb of the previous output pattern in the zero flag
                 mov subframe,#preamble_Z_xor ' This is output for the first frame only
          
                 :frame_loop
@@ -68,6 +71,7 @@ _outcog2
 
                         waitvid palette,subframe
 
+                        test subframe,mask_bit31 wz ' store the MSb of the previous output pattern in the zero flag
                         mov subframe,#preamble_Y_xor ' output Y preamble unconditionally on every odd frame
 
                         ' ENCODE HALF OF sample INTO temp HERE
@@ -92,6 +96,7 @@ _outcog2
 
                         waitvid palette,subframe
                  
+                        test subframe,mask_bit31 wz ' store the MSb of the previous output pattern in the zero flag
                         mov subframe,#preamble_X_xor ' output X preamble for every even frame except frame 0
 
                 djnz counter,#:frame_loop         
@@ -163,6 +168,7 @@ bmc_table
         word %1010101010110011,%0101010101001101,%0101010101001011,%1010101010110101,%0101010101010011,%1010101010101101,%1010101010101011,%0101010101010101         
 
 mask_low16 long $0000FFFF
+mask_bit31 long $80000000
 
         ' uninitialised assembly variables
         out_mask res 1
