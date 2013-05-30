@@ -51,9 +51,23 @@ _outcog2
                         ' ENCODE HALF OF sample INTO temp HERE
                         mov pattern,data1a
                         and pattern,mask_low16
+                        xor pattern,preamble
                         mov subframe,pattern
-                        xor subframe,preamble
-
+{
+                        ' read the bmc_table entry containing the 16-bit pattern for frame[0..7]
+                        mov temp,sample
+                        and temp,#$FF
+                        ror temp,1 wc ' generate the number of the register we want from the BMC table
+                        add temp,@bmc_table ' temp now contains the register number of the entry we want
+                        movs $+2,temp ' modify the read instruction
+                        test pattern,mask_bit31 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
+                        mov pattern,0-0 ' will be modified to read correct entry
+                        xor pattern,preamble_xor ' remove BMC pattern from preamble zone and replace with actual preamble
+                        if_z xor pattern,all_ones ' invert pattern according to previous finish state
+                        ' select the correct subentry and zero the rest
+                        if_nc and pattern,low_word_mask
+                        if_c shr pattern,#16                         
+ }
                         mov pattern,data1a
                         andn pattern,mask_low16
                         or subframe,pattern
@@ -76,8 +90,8 @@ _outcog2
                         ' ENCODE HALF OF sample INTO temp HERE
                         mov pattern,data2a
                         and pattern,mask_low16
+                        xor pattern,preamble
                         mov subframe,pattern
-                        xor subframe,preamble
 
                         mov pattern,data2a
                         andn pattern,mask_low16
