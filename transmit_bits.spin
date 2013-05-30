@@ -51,12 +51,11 @@ _outcog2
                         ' ////////
 
                         mov pattern,preamble
-                        xor pattern,data1a
-                        and pattern,mask_low16
-
-                        ' read the bmc_table entry containing the 16-bit pattern for frame[0..7]
-'                        mov temp,sample
-'                        call #bmc_encode_lower
+'                        xor pattern,data1a
+'                        and pattern,mask_low16
+                        mov temp,sample
+                        ' spare instruction here
+                        call #bmc_encode_lower
 
                         mov subframe,pattern
 
@@ -75,8 +74,11 @@ _outcog2
                         ' //////////////////////////////////////////////////////
 
                         mov pattern,#0
-                        xor pattern,data1b
-                        and pattern,mask_low16
+'                        xor pattern,data1b
+'                        and pattern,mask_low16
+                        mov temp,sample
+                        shr temp,#16
+                        call #bmc_encode_lower
 
                         mov subframe,pattern
 
@@ -103,6 +105,9 @@ _outcog2
                         mov pattern,preamble
                         xor pattern,data2a
                         and pattern,mask_low16
+'                        mov temp,sample
+                        ' spare instruction here
+'                        call #bmc_encode_lower
 
                         mov subframe,pattern
 
@@ -146,10 +151,12 @@ _outcog2
                  
                 jmp #:block_loop
 
-' parameters:
+' input:
 '       temp:           low byte is what to encode
 '       subframe:       upper 16 bits contains the result of the preceding bmc_encode_upper
-'       pattern:        contains either 0 or a preamble_xor code
+'       pattern:        contains either a preamble_xor code (LSB of subframe) or zero
+' output:
+'       pattern:        lower 16 bits contain BMC-encoded byte
 bmc_encode_lower        and temp,#$FF
                         ror temp,1 wc ' generate the number of the register we want from the BMC table
                         add temp,@bmc_table ' temp now contains the register number of the entry we want
@@ -161,6 +168,23 @@ bmc_encode_lower        and temp,#$FF
                         if_nc and pattern,mask_low16
                         if_c shr pattern,#16
 bmc_encode_lower_ret ret
+
+' input:
+'       temp:           low byte is what to encode
+'       subframe:       lower 16 bits contains the result of the preceding bmc_encode_lower
+' output:
+'       pattern:        lower 16 bits contain BMC-encoded byte
+bmc_encode_upper        and temp,#$FF
+                        ror temp,1 wc ' generate the number of the register we want from the BMC table
+                        add temp,@bmc_table ' temp now contains the register number of the entry we want
+                        movs $+2,temp ' modify the read instruction
+                        test subframe,mask_bit15 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
+                        mov pattern,0-0 ' will be modified to read correct entry
+                        if_z xor pattern,mask_ones ' invert pattern according to previous finish state
+                        ' select the correct subentry and zero the rest
+                        if_nc shl pattern,#16
+                        if_c andn pattern,mask_low16 
+bmc_encode_upper_ret ret
 
         data1a long %001101010011001100110011_00110011'^$33
         data1b long %00110011_001100110011001100110011'^$33
@@ -227,6 +251,7 @@ bmc_table
         word %1010101010110011,%0101010101001101,%0101010101001011,%1010101010110101,%0101010101010011,%1010101010101101,%1010101010101011,%0101010101010101         
 
 mask_low16 long $0000FFFF
+mask_bit15 long $00008000
 mask_bit31 long $80000000
 mask_ones long $FFFFFFFF
 
