@@ -43,17 +43,27 @@ _outcog2
          
                 :frame_loop
                         ' Either a Z (first frame) or X (other channel-0 frames) preamble will already be in temp
-                        xor subframe,data1a
+
+                        mov sample,sample1
+                        mov temp,data1a
+                        ' ENCODE HALF OF sample INTO temp HERE
+                        xor subframe,temp
                         waitvid palette,subframe
 
-                        mov subframe,data1b
+                        mov temp,data1b
+                        ' ENCODE HALF OF sample INTO temp HERE
+                        mov subframe,temp
                         waitvid palette,subframe
 
                         mov subframe,#preamble_Y_xor ' output Y preamble unconditionally on every odd frame
-                        xor subframe,data2a
+                        mov temp,data2a
+                        ' ENCODE HALF OF sample INTO temp HERE
+                        xor subframe,temp
                         waitvid palette,subframe
 
-                        mov subframe,data2b                         
+                        mov temp,data2b
+                        ' ENCODE HALF OF sample INTO temp HERE
+                        mov subframe,temp                         
                         waitvid palette,subframe
                  
                         mov subframe,#preamble_X_xor ' output X preamble for every even frame except frame 0
@@ -71,10 +81,10 @@ _outcog2
         data4a long %010011010011001100110011_00110011'^$33
         data4b long %00110011_001100110011001100110011'^$33
 
-        word1 long %0000_000000000000001100000000_0000
-        word2 long %0000_000000000000010100000000_0000
-        word3 long %0000_000000000000011000000000_0000
-        word4 long %0000_000000000000101000000000_0000
+        sample1 long %0000_000000000000001100000000_0000
+        sample2 long %0000_000000000000010100000000_0000
+        sample3 long %0000_000000000000011000000000_0000
+        sample4 long %0000_000000000000101000000000_0000
 
 '        lg_channels long 1
 
