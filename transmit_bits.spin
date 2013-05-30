@@ -25,10 +25,9 @@ _outcog2
         rdlong vcfg,temp ' enable video generator
         waitvid palette,#0 'immediately queue a buffer to keep output suppressed until we have real data
 
-'        mov counter,#1 ' initialise loop variables
         andn outa,out_mask ' suppress direct output from this cog just in case
 
-        ' the previosu two instructions take 8 cycles, which is the WAITVID handover time; this means that the video
+        ' The last two instructions take 8 cycles, which is 1 more than the WAITVID handover time, so the video
         ' generator should now be safely outputting the zero word we queued above, so we can re-enable its output
         or dira,out_mask
 
@@ -40,22 +39,25 @@ _outcog2
 
         :block_loop
                 mov counter,#192
-                mov temp,#preamble_Z_xor ' This is output for the first frame_only
+                mov subframe,#preamble_Z_xor ' This is output for the first frame_only
          
                 :frame_loop
                         ' Either a Z (first frame) or X (other channel-0 frames) preamble will already be in temp
-                        xor temp,data1a
-                        waitvid palette,temp
-                        ' 24 clocks spare here
-                        waitvid palette,data1b
-                        ' 16 clocks spare here
-                        mov temp,#preamble_Y_xor ' output Y preamble unconditionally on every odd frame
-                        xor temp,data2a
-                        waitvid palette,temp
-                        ' 20 clocks spare here
-                        mov temp,#preamble_X_xor ' output X preamble for every even frame except frame 0 
-                        waitvid palette,data2b
+                        xor subframe,data1a
+                        waitvid palette,subframe
+
+                        mov subframe,data1b
+                        waitvid palette,subframe
+
+                        mov subframe,#preamble_Y_xor ' output Y preamble unconditionally on every odd frame
+                        xor subframe,data2a
+                        waitvid palette,subframe
+
+                        mov subframe,data2b                         
+                        waitvid palette,subframe
                  
+                        mov subframe,#preamble_X_xor ' output X preamble for every even frame except frame 0
+
                 djnz counter,#:frame_loop         
                  
                 jmp #:block_loop
@@ -133,8 +135,9 @@ bmc_table
         ' uninitialised assembly variables
         out_mask res 1
         counter res 1
-        temp res 1
+        subframe res 1
         sample res 1
+        temp res 1
 
         fit 496
 CON
