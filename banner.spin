@@ -8,4 +8,4 @@ pub Main | idx
   repeat
     repeat idx from 0 to 45
       outa[23..16] := %10000000|pattern[idx]
-      waitcnt(20000+cnt)
+      waitcnt(15000+cnt)
