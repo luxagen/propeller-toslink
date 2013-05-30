@@ -39,11 +39,10 @@ _outcog2
         ' 192 kHz BUDGET IS 104 CLOCKS PER WAITVID, i.e. ABOUT 26 INSTRUCTIONS
 
         :block_loop
-                mov counter,#192 
+                mov counter,#192
                 mov temp,#preamble_Z_xor ' This is output for the first frame_only
          
                 :frame_loop
-
                         ' Either a Z (first frame) or X (other channel-0 frames) preamble will already be in temp
                         xor temp,data1a
                         waitvid palette,temp
@@ -70,12 +69,11 @@ _outcog2
         data4a long %010011010011001100110011_00110011'^$33
         data4b long %00110011_001100110011001100110011'^$33
 
-'        word1 long %0000_000000000000001100000000_0000
-'        word2 long %0000_000000000000010100000000_0000
-'        word3 long %0000_000000000000011000000000_0000
-'        word4 long %0000_000000000000101000000000_0000
+        word1 long %0000_000000000000001100000000_0000
+        word2 long %0000_000000000000010100000000_0000
+        word3 long %0000_000000000000011000000000_0000
+        word4 long %0000_000000000000101000000000_0000
 
-        frame long -1
 '        lg_channels long 1
 
         palette long $FF_00
@@ -136,6 +134,7 @@ bmc_table
         out_mask res 1
         counter res 1
         temp res 1
+        sample res 1
 
         fit 496
 CON
@@ -203,13 +202,3 @@ PRI calc_vcfg2(pin) | vgroup,subgroup
 '  pin//=4
 
   return calc_vcfg(VM_COMP_BASELOW+subgroup,0,0,0,0,vgroup,1<<pin)
-
-PRI get_preamble
-  ++frame
-
-  ifnot frame//384
-    return preamble_Z
-  elseif frame&1
-    return preamble_Y
-  else
-    return preamble_X

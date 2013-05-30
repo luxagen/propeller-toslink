@@ -18,12 +18,6 @@ OBJ
   xmit : "transmit_bits"
 '  xmit : "transmit_bits_fake"
 
-VAR
-'  long list[ARRLEN]
-
-DAT
-  frame long -1
-
 PUB Main | patternA,patternB,lg_div
 
   patternA := %000100010001_000001000001_00000000
