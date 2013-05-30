@@ -45,24 +45,30 @@ _outcog2
                         ' Either a Z (first frame) or X (other channel-0 frames) preamble will already be in temp
 
                         mov sample,sample1
-                        mov temp,data1a
+
                         ' ENCODE HALF OF sample INTO temp HERE
+                        mov temp,data1a
+
                         xor subframe,temp
                         waitvid palette,subframe
 
-                        mov temp,data1b
                         ' ENCODE HALF OF sample INTO temp HERE
+                        mov temp,data1b
+
                         mov subframe,temp
                         waitvid palette,subframe
 
                         mov subframe,#preamble_Y_xor ' output Y preamble unconditionally on every odd frame
-                        mov temp,data2a
+
                         ' ENCODE HALF OF sample INTO temp HERE
+                        mov temp,data2a
+
                         xor subframe,temp
                         waitvid palette,subframe
 
-                        mov temp,data2b
                         ' ENCODE HALF OF sample INTO temp HERE
+                        mov temp,data2b
+
                         mov subframe,temp                         
                         waitvid palette,subframe
                  
@@ -76,15 +82,9 @@ _outcog2
         data1b long %00110011_001100110011001100110011'^$33
         data2a long %001011010011001100110011_00110011'^$33
         data2b long %00110011_001100110011001100110011'^$33
-        data3a long %001010110011001100110011_00110011'^$33
-        data3b long %00110011_001100110011001100110011'^$33
-        data4a long %010011010011001100110011_00110011'^$33
-        data4b long %00110011_001100110011001100110011'^$33
 
         sample1 long %0000_000000000000001100000000_0000
         sample2 long %0000_000000000000010100000000_0000
-        sample3 long %0000_000000000000011000000000_0000
-        sample4 long %0000_000000000000101000000000_0000
 
 '        lg_channels long 1
 
