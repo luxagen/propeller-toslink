@@ -2,7 +2,7 @@ CON
   _clkmode = xtal1+pll16x
   _xinfreq=5000000
 
-  SPD_SR = 1000                ' Sample rate
+  SPD_SR = 44100                ' Sample rate
   SPD_CR = SPD_SR*128           ' Symbol rate
 
   ARRLEN=2
@@ -12,7 +12,7 @@ CON
   preamble_w=%00100111
 
   LED_BLUE=16
-  LED_RED=14
+  LED_RED=17
    
 OBJ
   xmit : "transmit_bits"
@@ -30,8 +30,9 @@ PUB Main | patternA,patternB,idx
   patternB := %00000000_010101010101_001001001001
 
   xmit.write(patternA,patternB)
-  xmit.start(4000,LED_BLUE)
+  xmit.start(SPD_CR,LED_RED)
 
+{
 PUB get_preamble
   ++frame
 
@@ -41,6 +42,7 @@ PUB get_preamble
     return preamble_w
   else
     return preamble_m
+}
 
 PUB init_array(array,length,patternA,patternB) | idx
   idx:=0
