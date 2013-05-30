@@ -41,8 +41,7 @@ _outcog2
 
         :block_loop
                 mov counter,#192
-                test subframe,mask_bit31 wz ' store the MSb of the previous output pattern in the zero flag
-                mov subframe,#preamble_Z_xor ' This is output for the first frame only
+                mov preamble,#preamble_Z_xor ' This is output for the first frame only
          
                 :frame_loop
                         ' Either a Z (first frame) or X (other channel-0 frames) preamble will already be in temp
@@ -52,7 +51,8 @@ _outcog2
                         ' ENCODE HALF OF sample INTO temp HERE
                         mov pattern,data1a
                         and pattern,mask_low16
-                        xor subframe,pattern
+                        mov subframe,pattern
+                        xor subframe,preamble
 
                         mov pattern,data1a
                         andn pattern,mask_low16
@@ -71,13 +71,13 @@ _outcog2
 
                         waitvid palette,subframe
 
-                        test subframe,mask_bit31 wz ' store the MSb of the previous output pattern in the zero flag
-                        mov subframe,#preamble_Y_xor ' output Y preamble unconditionally on every odd frame
+                        mov preamble,#preamble_Y_xor ' output Y preamble unconditionally on every odd frame
 
                         ' ENCODE HALF OF sample INTO temp HERE
                         mov pattern,data2a
                         and pattern,mask_low16
-                        xor subframe,pattern
+                        mov subframe,pattern
+                        xor subframe,preamble
 
                         mov pattern,data2a
                         andn pattern,mask_low16
@@ -96,8 +96,7 @@ _outcog2
 
                         waitvid palette,subframe
                  
-                        test subframe,mask_bit31 wz ' store the MSb of the previous output pattern in the zero flag
-                        mov subframe,#preamble_X_xor ' output X preamble for every even frame except frame 0
+                        mov preamble,#preamble_X_xor ' output X preamble for every even frame except frame 0
 
                 djnz counter,#:frame_loop         
                  
@@ -177,6 +176,7 @@ mask_bit31 long $80000000
         sample res 1
         temp res 1
         pattern res 1
+        preamble res 1
 
         fit 496
 CON
