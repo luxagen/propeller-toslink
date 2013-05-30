@@ -11,7 +11,8 @@ CON
   preamble_m=%01000111
   preamble_w=%00100111
 
-  SPD_PIN=0
+  DEBUGGING=false
+  SPD_PIN = 1-(DEBUGGING&1)
    
 OBJ
   xmit : "transmit_bits"
@@ -23,13 +24,18 @@ VAR
 DAT
   frame long -1
 
-PUB Main | patternA,patternB,idx
+PUB Main | patternA,patternB,lg_div
 
   patternA := %000100010001_000001000001_00000000
   patternB := %00000000_010101010101_001001001001
 
+  if DEBUGGING
+    lg_div:=7
+  else
+    lg_div:=0
+
   xmit.write(patternA,patternB)
-  xmit.start(SPD_CR,SPD_PIN)
+  xmit.start(SPD_CR,SPD_PIN,lg_div)
 
 PUB init_array(array,length,patternA,patternB) | idx
   idx:=0
