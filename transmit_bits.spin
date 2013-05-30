@@ -39,7 +39,7 @@ _outcog2
 
         :block_loop
                 mov counter,#192
-                mov subframe,#preamble_Z_xor ' This is output for the first frame_only
+                mov subframe,#preamble_Z_xor ' This is output for the first frame only
          
                 :frame_loop
                         ' Either a Z (first frame) or X (other channel-0 frames) preamble will already be in temp
@@ -48,28 +48,48 @@ _outcog2
 
                         ' ENCODE HALF OF sample INTO temp HERE
                         mov temp,data1a
-
+                        and temp,mask_low16
                         xor subframe,temp
+
+                        mov temp,data1a
+                        andn temp,mask_low16
+                        or subframe,temp
+ 
                         waitvid palette,subframe
 
                         ' ENCODE HALF OF sample INTO temp HERE
                         mov temp,data1b
-
+                        and temp,mask_low16
                         mov subframe,temp
+
+                        mov temp,data1b
+                        andn temp,mask_low16
+                        or subframe,temp
+
                         waitvid palette,subframe
 
                         mov subframe,#preamble_Y_xor ' output Y preamble unconditionally on every odd frame
 
                         ' ENCODE HALF OF sample INTO temp HERE
                         mov temp,data2a
-
+                        and temp,mask_low16
                         xor subframe,temp
+
+                        mov temp,data2a
+                        andn temp,mask_low16
+                        or subframe,temp 
+
                         waitvid palette,subframe
 
                         ' ENCODE HALF OF sample INTO temp HERE
                         mov temp,data2b
+                        and temp,mask_low16
+                        mov subframe,temp
 
-                        mov subframe,temp                         
+                        mov temp,data2b
+                        andn temp,mask_low16
+                        or subframe,temp
+
                         waitvid palette,subframe
                  
                         mov subframe,#preamble_X_xor ' output X preamble for every even frame except frame 0
@@ -141,6 +161,8 @@ bmc_table
         ' 11110000..11111111
         word %0101010100110011,%1010101011001101,%1010101011001011,%0101010100110101,%1010101011010011,%0101010100101101,%0101010100101011,%1010101011010101
         word %1010101010110011,%0101010101001101,%0101010101001011,%1010101010110101,%0101010101010011,%1010101010101101,%1010101010101011,%0101010101010101         
+
+mask_low16 long $0000FFFF
 
         ' uninitialised assembly variables
         out_mask res 1
