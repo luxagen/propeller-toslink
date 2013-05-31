@@ -12,15 +12,39 @@ CON
   LG_DIVIDER = (DEBUGGING&1)<<7
    
 OBJ
-  xmit : "spdif_generator"
+  spdif : "spdif_generator"
 
-PUB Main | count
+PUB Main | count,sample,pos
 
-  repeat count from 0 to 383
-    buffer[count] := count<<8
+  sample := -50 
+
+  repeat count from 0 to 191
+    buffer[2*count] := mksmp16(sample)
+    buffer[2*count + 1] := mksmp16(sample)
+
+  ++sample
+                                                                                             
+  buffer[382] := mksmp16(+500)
+  buffer[383] := mksmp16(-500)
   
-'  xmit.write(patternA,patternB)
-  xmit.start(SPD_CR,SPD_PIN,LG_DIVIDER)
+  spdif.start(SPD_CR,SPD_PIN,LG_DIVIDER,@buffer,@pos)
+
+'  repeat until (pos//384)>32
+'  repeat until (pos//384)<32
+
+  pos:=0
+
+  repeat
+    repeat count from 0 to 191 
+      repeat until (pos//192)<>count
+      buffer[2*count] := mksmp16(sample)
+      buffer[2*count + 1] := mksmp16(sample)
+    ++sample 
+
+  spdif.stop
+
+PUB mksmp16(value)
+  return (value<<12)&$0FFFFFF0
 
 PUB init_array(array,length,patternA,patternB) | idx
   idx:=0

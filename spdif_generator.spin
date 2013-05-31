@@ -1,11 +1,13 @@
 VAR
-  long subframes[2]
-
+  long _buffer
   long _frqa
   long _ctra
   long _vscl
+  long _posptr
   long _pinmask
   long _vcfg
+
+  long mycog
 
 CON
   #0,CM_DISABLE,CM_PLLINT,CM_PLL,CM_PLLD,CM_NCO,CM_NCOD,CM_DUTY,CM_DUTYD,CM_POS,CM_POSF,CM_RISE,CM_RISEF,CM_NEG,CM_NEGF,CM_FALL,CM_FALLF
@@ -27,11 +29,15 @@ DAT
 _outcog2
         ' load parameters into special registers 
         mov temp,par
+        rdlong buffer,temp
+        add temp,#4
         rdlong frqa,temp
         add temp,#4
         rdlong ctra,temp
         add temp,#4
         rdlong vscl,temp
+        add temp,#4
+        rdlong posptr,temp
         add temp,#4
         rdlong out_mask,temp
         add temp,#4
@@ -53,20 +59,29 @@ _outcog2
 
         ' 192 kHz BUDGET IS 104 CLOCKS PER WAITVID, i.e. ABOUT 26 INSTRUCTIONS
 
+        wrlong posptr,#0
+
         mov subframe,#0
 
         :block_loop
-                mov counter,#192
-                mov pattern,#preamble_Z_xor ' This is output for the first frame only
+              mov counter,#192
+              mov pattern,#preamble_Z_xor ' This is output for the first frame only
+
+              mov inptr,buffer
          
-                :frame_loop
+              :frame_loop
                         ' Either a Z (first frame) or X (other channel-0 frames) preamble will already be in 'pattern'
-'                        mov sample,sample1
-                        mov sample,ramp_sample
+                        rdlong sample,inptr
+                        add inptr,#4
+'                        mov sample,bizzle
+'                        and sample,mask_sample
+                         
+                        testn sample,#0 wc
+                        if_c or sample,mask_bit31                                     
 
                         ' //////////////////////////////////////////////////////
                         ' LEFT SUBFRAME
-
+                         
                         ' Send low word with preamble
                         call #bmc_encode_word
                         waitvid palette,subframe
@@ -75,18 +90,27 @@ _outcog2
                         mov pattern,#0
                         call #bmc_encode_word
                         waitvid palette,subframe
-
+                         
                         ' ////////
+                         
+                        rdlong sample,inptr
+                        add inptr,#4
+'                        mov sample,bizzle
+'                        neg sample,sample
+'                        and sample,mask_sample
+                         
+                        testn sample,#0 wc
+                        if_c or sample,mask_bit31                                     
 
- '                       mov sample,sample2
-                        call #munge_sample
-                        mov sample,ramp_sample
-
+                          ' We've just read the second sample, so we're done with the original frame in the input buffer
+                        add pos,#1
+                        wrlong pos,posptr
+                         
                         mov pattern,#preamble_Y_xor
-
+                         
                         ' //////////////////////////////////////////////////////
                         ' // RIGHT SUBFRAME
-
+                         
                         ' Send low word with preamble
                         call #bmc_encode_word
                         waitvid palette,subframe
@@ -95,21 +119,15 @@ _outcog2
                         mov pattern,#0
                         call #bmc_encode_word
                         waitvid palette,subframe
-
+                         
                         ' ////////
-                        call #munge_sample
-
+                         
                         mov pattern,#preamble_X_xor ' output X preamble for every even frame except frame 0
+                         
+              djnz counter,#:frame_loop         
+               
+        jmp #:block_loop
 
-                djnz counter,#:frame_loop         
-                 
-                jmp #:block_loop
-
-munge_sample            andn ramp_sample,mask_bit31
-                        add ramp_sample,#16
-                        testn ramp_sample,#0 wc
-                        if_c or ramp_sample,mask_bit31
-munge_sample_ret        ret
 ' input:
 '       sample:         low word is what to encode
 '       pattern:        either preamble or zero
@@ -151,18 +169,23 @@ bmc_encode_word
                         or subframe,pattern
 bmc_encode_word_ret     ret                        
 
-        sample1 long %0000_000000000000000000100000_0000
-        sample2 long %0000_000000000000000000000000_0000
+        ' //////////////////////////////////////////////////////////////////////
 
-        ramp_sample long 0
+bizzle long 4321<<12
 
-'        lg_channels long 1
-
+        mask_low16 long $0000FFFF
+        mask_bit15 long $00008000
+        mask_bit31 long $80000000
+        mask_ones long $FFFFFFFF
+        mask_sample long $0FFFFFF0
+         
         palette long $FF_00
         
         vcfg_vid long %0_01_0_0_0_000_00000000000_000_0_11111111 ' REMOVE THIS?
 
-bmc_table
+        pos long 0
+
+        bmc_table
         ' 00000000..00001111
         word %0011001100110011,%1100110011001101,%1100110011001011,%0011001100110101,%1100110011010011,%0011001100101101,%0011001100101011,%1100110011010101
         word %1100110010110011,%0011001101001101,%0011001101001011,%1100110010110101,%0011001101010011,%1100110010101101,%1100110010101011,%0011001101010101
@@ -212,11 +235,6 @@ bmc_table
         word %0101010100110011,%1010101011001101,%1010101011001011,%0101010100110101,%1010101011010011,%0101010100101101,%0101010100101011,%1010101011010101
         word %1010101010110011,%0101010101001101,%0101010101001011,%1010101010110101,%0101010101010011,%1010101010101101,%1010101010101011,%0101010101010101         
 
-mask_low16 long $0000FFFF
-mask_bit15 long $00008000
-mask_bit31 long $80000000
-mask_ones long $FFFFFFFF
-
         ' uninitialised assembly variables
         out_mask res 1
         counter res 1
@@ -224,25 +242,24 @@ mask_ones long $FFFFFFFF
         sample res 1
         temp res 1
         pattern res 1
+        buffer res 1
+        inptr res 1
+        posptr res 1
 
         fit 496
 
-PUB write(subframeA,subframeB)
-  subframes[0] := subframeA
-  subframes[1] := subframeB
-
-PUB start(carrier_rate,pin,lg_div)
+PUB start(carrier_rate,pin,lg_div,buffer_in,posptr_out)
+  _buffer := buffer_in
   _frqa := calc_frq(carrier_rate)
   _ctra := calc_ctr(CM_PLLINT,PLLD_1,0,0) 
   _vscl := calc_vscl(1,32,lg_div)
   _vcfg := calc_vcfg2(pin)
+  _posptr := posptr_out
   _pinmask := |<pin
-'  _frqa := frqa_vid
-'  _ctra := ctra_vid
-'  _vscl := vscl_vid
-'  _vcfg  := vcfg_vid
-'  _pinmask := $00FF0000
-  cognew(@_outcog2,@_frqa)
+  mycog:=cognew(@_outcog2,@_buffer)
+
+PUB stop
+  cogstop(mycog)
 
 ' /////////////////////////////////
 
