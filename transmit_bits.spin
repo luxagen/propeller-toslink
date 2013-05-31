@@ -18,9 +18,9 @@ CON
   preamble_Y=%00100111
   preamble_X=%01000111
 
-  preamble_Z_xor  =  preamble_Z' ^ $33 ' %00100100
-  preamble_Y_xor  =  preamble_Y' ^ $33 ' %00010100
-  preamble_X_xor  =  preamble_X' ^ $33 ' %01110100
+  preamble_Z_xor  =  preamble_Z ^ $33 ' %00100100
+  preamble_Y_xor  =  preamble_Y ^ $33 ' %00010100
+  preamble_X_xor  =  preamble_X ^ $33 ' %01110100
 
 DAT
         org 0
@@ -69,11 +69,10 @@ _outcog2
 
                         ' Encode first byte
 
- '                       mov temp,sample
- '                       call #bmc_encode_lower
- '                       mov subframe,pattern
+                        mov temp,sample
+                        call #bmc_encode_lower
                         mov subframe,pattern
-
+ 
                         ' Encode second byte
                         mov temp,sample
                         shr temp,#8
@@ -83,14 +82,14 @@ _outcog2
 '                        mov subframe,pattern
                         waitvid palette,subframe ' Send encoded word
 
-{                        ' Encode third byte
+                        ' Encode third byte
                         mov pattern,#0 ' No preamble
                         mov temp,sample
                         shr temp,#16
                         call #bmc_encode_lower
                         mov subframe,pattern
- }
-                        mov subframe,#0
+
+'                        mov subframe,#0
                         ' Encode fourth byte
                         mov temp,sample
                         shr temp,#24
@@ -106,7 +105,7 @@ _outcog2
 
                         ' ////////
 
-{
+
                        ' Encode first byte
                         mov pattern,#preamble_Y_xor
                         mov temp,sample
@@ -117,12 +116,10 @@ _outcog2
                         shr temp,#8
                         call #bmc_encode_upper
                         or subframe,pattern
-}
-                        mov pattern,#preamble_Y_xor
-                        mov subframe,pattern
+
                         waitvid palette,subframe ' Send encoded word
 
-{
+
                         ' Encode third byte
                         mov pattern,#0 ' No preamble
                         mov temp,sample
@@ -134,9 +131,7 @@ _outcog2
                         shr temp,#24
                         call #bmc_encode_upper
                         or subframe,pattern
-}
-                        mov pattern,#0
-                        mov subframe,pattern
+
                         waitvid palette,subframe ' Send encoded word
 
                         mov pattern,#preamble_X_xor ' output X preamble for every even frame except frame 0
@@ -153,11 +148,11 @@ _outcog2
 '       pattern:        lower 16 bits contain BMC-encoded byte
 bmc_encode_lower        and temp,#$FF
                         ror temp,1 wc ' generate the number of the register we want from the BMC table
-                        add temp,@bmc_table ' temp now contains the register number of the entry we want
+                        add temp,#bmc_table ' temp now contains the register number of the entry we want
                         movs $+2,temp ' modify the read instruction
                         test subframe,mask_bit31 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
-'                        xor pattern,0-0 ' will be modified to read correct entry
-'                        if_nz xor pattern,mask_ones ' invert pattern according to previous finish state
+                        xor pattern,0-0 ' will be modified to read correct entry
+                        if_nz xor pattern,mask_ones ' invert pattern according to previous finish state
                         ' select the correct subentry and zero the rest
                         if_nc and pattern,mask_low16
                         if_c shr pattern,#16
