@@ -89,14 +89,14 @@ _outcog2
                         shr temp,#16
                         call #bmc_encode_lower
                         mov subframe,pattern
+ }
+                        mov subframe,#0
                         ' Encode fourth byte
                         mov temp,sample
                         shr temp,#24
                         call #bmc_encode_upper
                         or subframe,pattern
- }
-                        mov pattern,#0
-                        mov subframe,pattern
+ 
                         waitvid palette,subframe ' Send encoded word
 
                         ' //////////////////////////////////////////////////////
@@ -162,7 +162,6 @@ bmc_encode_lower        and temp,#$FF
                         if_nc and pattern,mask_low16
                         if_c shr pattern,#16
 bmc_encode_lower_ret ret
-                       THIS IS WRONG - IT'S SUPPOSED TO RETRIEVE SLOT 0 AND IT'S GETTING $0F89
 ' input:
 '       temp:           low byte is what to encode
 '       subframe:       lower 16 bits contains the result of the preceding bmc_encode_lower
@@ -170,17 +169,11 @@ bmc_encode_lower_ret ret
 '       pattern:        lower 16 bits contain BMC-encoded byte
 bmc_encode_upper        and temp,#$FF
                         ror temp,1 wc ' generate the number of the register we want from the BMC table
-                        add temp,@bmc_table ' temp now contains the register number of the entry we want
+                        add temp,#bmc_table ' temp now contains the register number of the entry we want
                         movs $+2,temp ' modify the read instruction
-                        mov temp,#0 wc
-'                        nop
-'                        nop
-'                        nop
-'                        nop
-'                        test subframe,mask_bit15 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
-'                        mov pattern,0-0 ' will be modified to read correct entry
-                        mov pattern,mask_ones
-                        if_z xor pattern,mask_ones ' invert pattern according to previous finish state
+                        test subframe,mask_bit15 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
+                        mov pattern,0-0 ' will be modified to read correct entry
+                        if_nz xor pattern,mask_ones ' invert pattern according to previous finish state
                         ' select the correct subentry and zero the rest
                         if_nc shl pattern,#16
                         if_c andn pattern,mask_low16
