@@ -1,0 +1,14 @@
+set up counter A for PLL-internal mode at S/PDIF carrier frequency, no multiplier
+set VCFG to vmode=??,cmode=0,chroma1=0,chroma0=0,auralsub=???,vgroup=(group of 8),vpins=1(?)
+set VSCL to pixelclocks=pll_rate/spdif_carrier_rate,frameclocks = 32*pixelclocks
+set up counter B for POSEDGE MODE on video output pin with FRQB=0x80000000
+counter A's output pin is the transition signal
+counter B's output pin is the S/PDIF signal
+
+lookup table contains transition patterns for BMC
+
+1. load 24-bit sample into reg[4..27]
+2. load reg[27..31] with VUCP bits and zero [0..3]
+3. convert 32-bit word to 64-bit transition pattern in 2 registers (low bits should be ...01010101)
+4. replace lower 8 bits with transition pattern for preamble
+5. WAITVID and set
