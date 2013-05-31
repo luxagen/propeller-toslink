@@ -1,3 +1,5 @@
+VAR
+  long buffer[384]
 CON
   _clkmode = xtal1+pll16x
   _xinfreq=5000000
@@ -5,27 +7,20 @@ CON
   SPD_SR = 48000                ' Sample rate
   SPD_CR = SPD_SR*128           ' Symbol rate
 
-  ARRLEN=2
-
   DEBUGGING=false
   SPD_PIN = 1-(DEBUGGING&1)
+  LG_DIVIDER = (DEBUGGING&1)<<7
    
 OBJ
-  xmit : "transmit_bits"
-'  xmit : "transmit_bits_fake"
+  xmit : "spdif_generator"
 
-PUB Main | patternA,patternB,lg_div
+PUB Main | count
 
-  patternA := %000100010001_000001000001_00000000
-  patternB := %00000000_01 0101010101_001001001001
-
-  if DEBUGGING
-    lg_div:=7  
-  else
-    lg_div:=0
-
-  xmit.write(patternA,patternB)
-  xmit.start(SPD_CR,SPD_PIN,lg_div)
+  repeat count from 0 to 383
+    buffer[count] := count<<8
+  
+'  xmit.write(patternA,patternB)
+  xmit.start(SPD_CR,SPD_PIN,LG_DIVIDER)
 
 PUB init_array(array,length,patternA,patternB) | idx
   idx:=0
