@@ -61,7 +61,8 @@ _outcog2
          
                 :frame_loop
                         ' Either a Z (first frame) or X (other channel-0 frames) preamble will already be in 'pattern'
-                        mov sample,sample1
+'                        mov sample,sample1
+                        mov sample,ramp_sample
 
                         ' //////////////////////////////////////////////////////
                         ' LEFT SUBFRAME
@@ -77,7 +78,10 @@ _outcog2
 
                         ' ////////
 
-                        mov sample,sample2
+ '                       mov sample,sample2
+                        call #munge_sample
+                        mov sample,ramp_sample
+
                         mov pattern,#preamble_Y_xor
 
                         ' //////////////////////////////////////////////////////
@@ -93,6 +97,7 @@ _outcog2
                         waitvid palette,subframe
 
                         ' ////////
+                        call #munge_sample
 
                         mov pattern,#preamble_X_xor ' output X preamble for every even frame except frame 0
 
@@ -100,6 +105,7 @@ _outcog2
                  
                 jmp #:block_loop
 
+{
 ' input:
 '       temp:           low byte is what to encode
 '       subframe:       upper 16 bits contains the result of the preceding bmc_encode_upper
@@ -133,7 +139,12 @@ bmc_encode_upper        and temp,#$FF
                         if_nc shl pattern,#16
                         if_c andn pattern,mask_low16
 bmc_encode_upper_ret    ret
-
+}
+munge_sample            andn ramp_sample,mask_bit31
+                        add ramp_sample,#16
+                        testn ramp_sample,#0 wc
+                        if_c or ramp_sample,mask_bit31
+munge_sample_ret        ret
 ' input:
 '       sample:         low word is what to encode
 '       pattern:        either preamble or zero
@@ -145,17 +156,40 @@ bmc_encode_upper_ret    ret
 bmc_encode_word
                         ' Encode first byte
                         mov temp,sample
-                        call #bmc_encode_lower
+                        and temp,#$FF
+
+                        shr temp,#1 wc ' generate the number of the register we want from the BMC table
+                        add temp,#bmc_table ' temp now contains the register number of the entry we want
+                        movs $+2,temp ' modify the read instruction
+                        test subframe,mask_bit31 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
+                        xor pattern,0-0 ' will be modified to read correct entry
+                        if_nz xor pattern,mask_ones ' invert pattern according to previous finish state
+                        ' select the correct subentry and zero the rest
+                        if_nc and pattern,mask_low16
+                        if_c shr pattern,#16
                         mov subframe,pattern 
+
                         ' Encode second byte
                         mov temp,sample
                         shr temp,#8
-                        call #bmc_encode_upper                        
+                        and temp,#$FF
+
+                        shr temp,#1 wc ' generate the number of the register we want from the BMC table
+                        add temp,#bmc_table ' temp now contains the register number of the entry we want
+                        movs $+2,temp ' modify the read instruction
+                        test subframe,mask_bit15 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
+                        mov pattern,0-0 ' will be modified to read correct entry
+                        if_nz xor pattern,mask_ones ' invert pattern according to previous finish state
+                        ' select the correct subentry and zero the rest
+                        if_nc shl pattern,#16
+                        if_c andn pattern,mask_low16                        
                         or subframe,pattern
 bmc_encode_word_ret     ret                        
 
         sample1 long %0000_000000000000000000100000_0000
         sample2 long %0000_000000000000000000000000_0000
+
+        ramp_sample long 0
 
 '        lg_channels long 1
 

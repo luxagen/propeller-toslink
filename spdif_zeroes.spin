@@ -7,7 +7,7 @@ CON
 
   ARRLEN=2
 
-  DEBUGGING=true
+  DEBUGGING=false
   SPD_PIN = 1-(DEBUGGING&1)
    
 OBJ
@@ -17,7 +17,7 @@ OBJ
 PUB Main | patternA,patternB,lg_div
 
   patternA := %000100010001_000001000001_00000000
-  patternB := %00000000_010101010101_001001001001
+  patternB := %00000000_01 0101010101_001001001001
 
   if DEBUGGING
     lg_div:=7  
