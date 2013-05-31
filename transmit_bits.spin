@@ -36,8 +36,7 @@ _outcog2
         rdlong out_mask,temp
         add temp,#4
 
-'        andn dira,out_mask      ' Quickly suppress all output from this cog
-or dira,out_mask
+        andn dira,out_mask      ' Quickly suppress all output from this cog
 
         rdlong vcfg,temp        ' Enable video generator
         waitvid palette,#0      ' Queue a buffer to keep generator output low until we have real data
@@ -69,18 +68,22 @@ or dira,out_mask
                         ' LEFT SUBFRAME
 
                         ' Encode first byte
-                        mov temp,sample
-                        call #bmc_encode_lower
+
+ '                       mov temp,sample
+ '                       call #bmc_encode_lower
+ '                       mov subframe,pattern
                         mov subframe,pattern
+
                         ' Encode second byte
                         mov temp,sample
                         shr temp,#8
                         call #bmc_encode_upper
                         or subframe,pattern
-  
+
+'                        mov subframe,pattern
                         waitvid palette,subframe ' Send encoded word
 
-                        ' Encode third byte
+{                        ' Encode third byte
                         mov pattern,#0 ' No preamble
                         mov temp,sample
                         shr temp,#16
@@ -91,7 +94,9 @@ or dira,out_mask
                         shr temp,#24
                         call #bmc_encode_upper
                         or subframe,pattern
-
+ }
+                        mov pattern,#0
+                        mov subframe,pattern
                         waitvid palette,subframe ' Send encoded word
 
                         ' //////////////////////////////////////////////////////
@@ -101,6 +106,7 @@ or dira,out_mask
 
                         ' ////////
 
+{
                        ' Encode first byte
                         mov pattern,#preamble_Y_xor
                         mov temp,sample
@@ -111,9 +117,12 @@ or dira,out_mask
                         shr temp,#8
                         call #bmc_encode_upper
                         or subframe,pattern
-  
+}
+                        mov pattern,#preamble_Y_xor
+                        mov subframe,pattern
                         waitvid palette,subframe ' Send encoded word
 
+{
                         ' Encode third byte
                         mov pattern,#0 ' No preamble
                         mov temp,sample
@@ -125,10 +134,13 @@ or dira,out_mask
                         shr temp,#24
                         call #bmc_encode_upper
                         or subframe,pattern
-
+}
+                        mov pattern,#0
+                        mov subframe,pattern
                         waitvid palette,subframe ' Send encoded word
 
                         mov pattern,#preamble_X_xor ' output X preamble for every even frame except frame 0
+
                 djnz counter,#:frame_loop         
                  
                 jmp #:block_loop
@@ -136,7 +148,7 @@ or dira,out_mask
 ' input:
 '       temp:           low byte is what to encode
 '       subframe:       upper 16 bits contains the result of the preceding bmc_encode_upper
-'       pattern:        contains either a preamble_xor code (LSB of subframe) or zero
+'       pattern:        contains either a preamble_xor code (if LSB of subframe) or zero
 ' output:
 '       pattern:        lower 16 bits contain BMC-encoded byte
 bmc_encode_lower        and temp,#$FF
@@ -150,7 +162,7 @@ bmc_encode_lower        and temp,#$FF
                         if_nc and pattern,mask_low16
                         if_c shr pattern,#16
 bmc_encode_lower_ret ret
-
+                       THIS IS WRONG - IT'S SUPPOSED TO RETRIEVE SLOT 0 AND IT'S GETTING $0F89
 ' input:
 '       temp:           low byte is what to encode
 '       subframe:       lower 16 bits contains the result of the preceding bmc_encode_lower
@@ -160,13 +172,18 @@ bmc_encode_upper        and temp,#$FF
                         ror temp,1 wc ' generate the number of the register we want from the BMC table
                         add temp,@bmc_table ' temp now contains the register number of the entry we want
                         movs $+2,temp ' modify the read instruction
-                        test subframe,mask_bit15 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
-                        mov pattern,#0
+                        mov temp,#0 wc
+'                        nop
+'                        nop
+'                        nop
+'                        nop
+'                        test subframe,mask_bit15 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
 '                        mov pattern,0-0 ' will be modified to read correct entry
-'                        if_z xor pattern,mask_ones ' invert pattern according to previous finish state
+                        mov pattern,mask_ones
+                        if_z xor pattern,mask_ones ' invert pattern according to previous finish state
                         ' select the correct subentry and zero the rest
                         if_nc shl pattern,#16
-                        if_c andn pattern,mask_low16 
+                        if_c andn pattern,mask_low16
 bmc_encode_upper_ret ret
 
         data1a long %001100110011001100110011_00110011'^$33

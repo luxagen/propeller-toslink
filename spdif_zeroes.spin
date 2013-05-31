@@ -7,11 +7,7 @@ CON
 
   ARRLEN=2
 
-  preamble_b=%00010111
-  preamble_m=%01000111
-  preamble_w=%00100111
-
-  DEBUGGING=false
+  DEBUGGING=true
   SPD_PIN = 1-(DEBUGGING&1)
    
 OBJ
@@ -24,7 +20,7 @@ PUB Main | patternA,patternB,lg_div
   patternB := %00000000_010101010101_001001001001
 
   if DEBUGGING
-    lg_div:=7
+    lg_div:=7  
   else
     lg_div:=0
 
@@ -36,4 +32,4 @@ PUB init_array(array,length,patternA,patternB) | idx
   repeat while idx<length
     long[array][idx++] := patternA
     long[array][idx++] := patternB
-  
+                                                                
