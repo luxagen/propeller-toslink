@@ -60,79 +60,39 @@ _outcog2
                 mov pattern,#preamble_Z_xor ' This is output for the first frame only
          
                 :frame_loop
-                        ' Either a Z (first frame) or X (other channel-0 frames) preamble will already be in temp
-
+                        ' Either a Z (first frame) or X (other channel-0 frames) preamble will already be in 'pattern'
                         mov sample,sample1
 
                         ' //////////////////////////////////////////////////////
                         ' LEFT SUBFRAME
 
-                        ' Encode first byte
+                        ' Send low word with preamble
+                        call #bmc_encode_word
+                        waitvid palette,subframe
+                        ' Send high word, no preamble
+                        shr sample,#16
+                        mov pattern,#0
+                        call #bmc_encode_word
+                        waitvid palette,subframe
 
-                        mov temp,sample
-                        call #bmc_encode_lower
-                        mov subframe,pattern
- 
-                        ' Encode second byte
-                        mov temp,sample
-                        shr temp,#8
-                        call #bmc_encode_upper
-                        or subframe,pattern
+                        ' ////////
 
-'                        mov subframe,pattern
-                        waitvid palette,subframe ' Send encoded word
-
-                        ' Encode third byte
-                        mov pattern,#0 ' No preamble
-                        mov temp,sample
-                        shr temp,#16
-                        call #bmc_encode_lower
-                        mov subframe,pattern
-
-'                        mov subframe,#0
-                        ' Encode fourth byte
-                        mov temp,sample
-                        shr temp,#24
-                        call #bmc_encode_upper
-                        or subframe,pattern
- 
-                        waitvid palette,subframe ' Send encoded word
+                        mov sample,sample2
+                        mov pattern,#preamble_Y_xor
 
                         ' //////////////////////////////////////////////////////
                         ' // RIGHT SUBFRAME
 
-                        mov sample,sample2
+                        ' Send low word with preamble
+                        call #bmc_encode_word
+                        waitvid palette,subframe
+                        ' Send high word, no preamble
+                        shr sample,#16
+                        mov pattern,#0
+                        call #bmc_encode_word
+                        waitvid palette,subframe
 
                         ' ////////
-
-
-                       ' Encode first byte
-                        mov pattern,#preamble_Y_xor
-                        mov temp,sample
-                        call #bmc_encode_lower
-                        mov subframe,pattern
-                        ' Encode second byte
-                        mov temp,sample
-                        shr temp,#8
-                        call #bmc_encode_upper
-                        or subframe,pattern
-
-                        waitvid palette,subframe ' Send encoded word
-
-
-                        ' Encode third byte
-                        mov pattern,#0 ' No preamble
-                        mov temp,sample
-                        shr temp,#16
-                        call #bmc_encode_lower
-                        mov subframe,pattern
-                        ' Encode fourth byte
-                        mov temp,sample
-                        shr temp,#24
-                        call #bmc_encode_upper
-                        or subframe,pattern
-
-                        waitvid palette,subframe ' Send encoded word
 
                         mov pattern,#preamble_X_xor ' output X preamble for every even frame except frame 0
 
@@ -147,7 +107,7 @@ _outcog2
 ' output:
 '       pattern:        lower 16 bits contain BMC-encoded byte
 bmc_encode_lower        and temp,#$FF
-                        ror temp,1 wc ' generate the number of the register we want from the BMC table
+                        shr temp,#1 wc ' generate the number of the register we want from the BMC table
                         add temp,#bmc_table ' temp now contains the register number of the entry we want
                         movs $+2,temp ' modify the read instruction
                         test subframe,mask_bit31 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
@@ -163,7 +123,7 @@ bmc_encode_lower_ret ret
 ' output:
 '       pattern:        lower 16 bits contain BMC-encoded byte
 bmc_encode_upper        and temp,#$FF
-                        ror temp,1 wc ' generate the number of the register we want from the BMC table
+                        shr temp,#1 wc ' generate the number of the register we want from the BMC table
                         add temp,#bmc_table ' temp now contains the register number of the entry we want
                         movs $+2,temp ' modify the read instruction
                         test subframe,mask_bit15 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
@@ -172,14 +132,29 @@ bmc_encode_upper        and temp,#$FF
                         ' select the correct subentry and zero the rest
                         if_nc shl pattern,#16
                         if_c andn pattern,mask_low16
-bmc_encode_upper_ret ret
+bmc_encode_upper_ret    ret
 
-        data1a long %001100110011001100110011_00110011'^$33
-        data1b long %00110011_001100110011001100110011'^$33
-        data2a long %001100110011001100110011_00110011'^$33
-        data2b long %00110011_001100110011001100110011'^$33
+' input:
+'       sample:         low word is what to encode
+'       pattern:        either preamble or zero
+'       subframe:       contains the result of the preceding bmc_output_word
+' output:
+'       subframe:       BMC-encoded word
+' uses:
+'       temp,pattern        
+bmc_encode_word
+                        ' Encode first byte
+                        mov temp,sample
+                        call #bmc_encode_lower
+                        mov subframe,pattern 
+                        ' Encode second byte
+                        mov temp,sample
+                        shr temp,#8
+                        call #bmc_encode_upper                        
+                        or subframe,pattern
+bmc_encode_word_ret     ret                        
 
-        sample1 long %0000_000000000000000000000000_0000
+        sample1 long %0000_000000000000000000100000_0000
         sample2 long %0000_000000000000000000000000_0000
 
 '        lg_channels long 1
@@ -276,8 +251,8 @@ PRI divround(x,y)
   return (x + (y/2))/y
 
 PRI calc_frq(rate_hz) | cf_up
-  return 329860360 ' 48 kHz
-'  return 659706977 ' 96 kHz
+'  return 329860360 ' 48 kHz
+  return 659706977 ' 96 kHz
 '  return 1319413953 ' 192 kHz
   ' calculate 2^32 * rate_hz/clkfreq
   cf_up:=divround(CLKFREQ,|<18)
