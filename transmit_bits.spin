@@ -48,53 +48,38 @@ _outcog2
 
                         mov sample,sample1
 
-                        ' ////////
-
-                        mov pattern,preamble
-'                        xor pattern,data1a
-'                        and pattern,mask_low16
-                        mov temp,sample
-                        ' spare instruction here
-                        call #bmc_encode_lower
-
-                        mov subframe,pattern
-
-                        ' ////////
-
-                        mov pattern,#0
-                        xor pattern,data1a
-                        andn pattern,mask_low16
-
-                        or subframe,pattern
- 
-                        ' ////////
-
-                        waitvid palette,subframe
-
                         ' //////////////////////////////////////////////////////
+                        ' LEFT SUBFRAME
 
-                        mov pattern,#0
-'                        xor pattern,data1b
-'                        and pattern,mask_low16
+                        ' Encode first byte
+                        mov pattern,preamble
+                        mov temp,sample
+                        call #bmc_encode_lower
+                        mov subframe,pattern
+                        ' Encode second byte
+                        mov temp,sample
+                        shr temp,#8
+                        call #bmc_encode_upper
+                        or subframe,pattern
+  
+                        waitvid palette,subframe ' Send encoded word
+
+                        ' Encode third byte
+                        mov pattern,#0 ' No preamble
                         mov temp,sample
                         shr temp,#16
                         call #bmc_encode_lower
-
                         mov subframe,pattern
-
-                        ' ////////
-
-                        mov pattern,#0
-                        xor pattern,data1b
-                        andn pattern,mask_low16
-
+                        ' Encode fourth byte
+                        mov temp,sample
+                        shr temp,#24
+                        call #bmc_encode_upper
                         or subframe,pattern
 
-                        ' ////////
-
-                        waitvid palette,subframe
+                        waitvid palette,subframe ' Send encoded word
 
                         ' //////////////////////////////////////////////////////
+                        ' // RIGHT SUBFRAME
 
                         mov preamble,#preamble_Y_xor ' output Y preamble unconditionally on every odd frame
 
@@ -105,41 +90,42 @@ _outcog2
                         mov pattern,preamble
                         xor pattern,data2a
                         and pattern,mask_low16
-'                        mov temp,sample
-                        ' spare instruction here
-'                        call #bmc_encode_lower
 
                         mov subframe,pattern
 
-                        ' ////////
-
-                        mov pattern,#0
-                        xor pattern,data2a
-                        andn pattern,mask_low16
-
+                        ' Encode second byte
+                        mov temp,sample
+                        shr temp,#8
+                        call #bmc_encode_upper
+'                        mov pattern,#0
+'                        xor pattern,data2a
+'                        andn pattern,mask_low16
                         or subframe,pattern 
 
-                        ' ////////
-
-                        waitvid palette,subframe
+                        waitvid palette,subframe ' Send encoded word
 
                         ' //////////////////////////////////////////////////////
-
+ 
+                        ' Encode third byte
                         mov pattern,#0
                         xor pattern,data2b
                         and pattern,mask_low16
 
                         mov subframe,pattern
 
-                        ' ////////
-
-                        mov pattern,#0
-                        xor pattern,data2b
-                        andn pattern,mask_low16
-
+                         ' Encode third byte
+ '                       mov pattern,#0 ' No preamble
+ '                       mov temp,sample
+ '                       shr temp,#16
+ '                       call #bmc_encode_lower
+ '                       mov subframe,pattern
+                        ' Encode fourth byte
+                        mov temp,sample
+                        shr temp,#24
+                        call #bmc_encode_upper
                         or subframe,pattern
 
-                        ' ////////
+                       ' ////////
 
                         waitvid palette,subframe
                  
@@ -163,7 +149,7 @@ bmc_encode_lower        and temp,#$FF
                         movs $+2,temp ' modify the read instruction
                         test subframe,mask_bit31 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
                         xor pattern,0-0 ' will be modified to read correct entry
-                        if_z xor pattern,mask_ones ' invert pattern according to previous finish state
+                        if_nz xor pattern,mask_ones ' invert pattern according to previous finish state
                         ' select the correct subentry and zero the rest
                         if_nc and pattern,mask_low16
                         if_c shr pattern,#16
