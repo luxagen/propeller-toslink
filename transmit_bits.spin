@@ -7,6 +7,21 @@ VAR
   long _pinmask
   long _vcfg
 
+CON
+  #0,CM_DISABLE,CM_PLLINT,CM_PLL,CM_PLLD,CM_NCO,CM_NCOD,CM_DUTY,CM_DUTYD,CM_POS,CM_POSF,CM_RISE,CM_RISEF,CM_NEG,CM_NEGF,CM_FALL,CM_FALLF
+
+  #0,PLLD_1_8,PLLD_1_4,PLLD_1_2,PLLD_1,PLLD_2,PLLD_4,PLLD_8,PLLD_16
+
+  #0,VM_NONE,VM_VGA,VM_COMP_BASELOW,VM_COMP_BASEHIGH
+
+  preamble_Z=%00010111
+  preamble_Y=%00100111
+  preamble_X=%01000111
+
+  preamble_Z_xor  =  preamble_Z' ^ $33 ' %00100100
+  preamble_Y_xor  =  preamble_Y' ^ $33 ' %00010100
+  preamble_X_xor  =  preamble_X' ^ $33 ' %01110100
+
 DAT
         org 0
 _outcog2
@@ -21,11 +36,13 @@ _outcog2
         rdlong out_mask,temp
         add temp,#4
 
-        andn dira,out_mask ' quickly suppress output
-        rdlong vcfg,temp ' enable video generator
-        waitvid palette,#0 'immediately queue a buffer to keep output suppressed until we have real data
+'        andn dira,out_mask      ' Quickly suppress all output from this cog
+or dira,out_mask
 
-        andn outa,out_mask ' suppress direct output from this cog just in case
+        rdlong vcfg,temp        ' Enable video generator
+        waitvid palette,#0      ' Queue a buffer to keep generator output low until we have real data
+
+        andn outa,out_mask      ' Suppress direct output too
 
         ' The last two instructions take 8 cycles, which is 1 more than the WAITVID handover time, so the video
         ' generator should now be safely outputting the zero word we queued above, so we can re-enable its output
@@ -41,7 +58,7 @@ _outcog2
 
         :block_loop
                 mov counter,#192
-                mov preamble,#preamble_Z_xor ' This is output for the first frame only
+                mov pattern,#preamble_Z_xor ' This is output for the first frame only
          
                 :frame_loop
                         ' Either a Z (first frame) or X (other channel-0 frames) preamble will already be in temp
@@ -52,7 +69,6 @@ _outcog2
                         ' LEFT SUBFRAME
 
                         ' Encode first byte
-                        mov pattern,preamble
                         mov temp,sample
                         call #bmc_encode_lower
                         mov subframe,pattern
@@ -81,58 +97,38 @@ _outcog2
                         ' //////////////////////////////////////////////////////
                         ' // RIGHT SUBFRAME
 
-                        mov preamble,#preamble_Y_xor ' output Y preamble unconditionally on every odd frame
-
                         mov sample,sample2
 
                         ' ////////
 
-                        mov pattern,preamble
-                        xor pattern,data2a
-                        and pattern,mask_low16
-
+                       ' Encode first byte
+                        mov pattern,#preamble_Y_xor
+                        mov temp,sample
+                        call #bmc_encode_lower
                         mov subframe,pattern
-
                         ' Encode second byte
                         mov temp,sample
                         shr temp,#8
                         call #bmc_encode_upper
-'                        mov pattern,#0
-'                        xor pattern,data2a
-'                        andn pattern,mask_low16
-                        or subframe,pattern 
-
+                        or subframe,pattern
+  
                         waitvid palette,subframe ' Send encoded word
 
-                        ' //////////////////////////////////////////////////////
- 
                         ' Encode third byte
-                        mov pattern,#0
-                        xor pattern,data2b
-                        and pattern,mask_low16
-
+                        mov pattern,#0 ' No preamble
+                        mov temp,sample
+                        shr temp,#16
+                        call #bmc_encode_lower
                         mov subframe,pattern
-
-                         ' Encode third byte
- '                       mov pattern,#0 ' No preamble
- '                       mov temp,sample
- '                       shr temp,#16
- '                       call #bmc_encode_lower
- '                       mov subframe,pattern
                         ' Encode fourth byte
                         mov temp,sample
                         shr temp,#24
                         call #bmc_encode_upper
                         or subframe,pattern
 
-                       ' ////////
+                        waitvid palette,subframe ' Send encoded word
 
-                        waitvid palette,subframe
-                 
-                        ' //////////////////////////////////////////////////////
-
-                        mov preamble,#preamble_X_xor ' output X preamble for every even frame except frame 0
-
+                        mov pattern,#preamble_X_xor ' output X preamble for every even frame except frame 0
                 djnz counter,#:frame_loop         
                  
                 jmp #:block_loop
@@ -148,8 +144,8 @@ bmc_encode_lower        and temp,#$FF
                         add temp,@bmc_table ' temp now contains the register number of the entry we want
                         movs $+2,temp ' modify the read instruction
                         test subframe,mask_bit31 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
-                        xor pattern,0-0 ' will be modified to read correct entry
-                        if_nz xor pattern,mask_ones ' invert pattern according to previous finish state
+'                        xor pattern,0-0 ' will be modified to read correct entry
+'                        if_nz xor pattern,mask_ones ' invert pattern according to previous finish state
                         ' select the correct subentry and zero the rest
                         if_nc and pattern,mask_low16
                         if_c shr pattern,#16
@@ -165,20 +161,21 @@ bmc_encode_upper        and temp,#$FF
                         add temp,@bmc_table ' temp now contains the register number of the entry we want
                         movs $+2,temp ' modify the read instruction
                         test subframe,mask_bit15 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
-                        mov pattern,0-0 ' will be modified to read correct entry
-                        if_z xor pattern,mask_ones ' invert pattern according to previous finish state
+                        mov pattern,#0
+'                        mov pattern,0-0 ' will be modified to read correct entry
+'                        if_z xor pattern,mask_ones ' invert pattern according to previous finish state
                         ' select the correct subentry and zero the rest
                         if_nc shl pattern,#16
                         if_c andn pattern,mask_low16 
 bmc_encode_upper_ret ret
 
-        data1a long %001101010011001100110011_00110011'^$33
+        data1a long %001100110011001100110011_00110011'^$33
         data1b long %00110011_001100110011001100110011'^$33
-        data2a long %001011010011001100110011_00110011'^$33
+        data2a long %001100110011001100110011_00110011'^$33
         data2b long %00110011_001100110011001100110011'^$33
 
-        sample1 long %0000_000000000000001100000000_0000
-        sample2 long %0000_000000000000010100000000_0000
+        sample1 long %0000_000000000000000000000000_0000
+        sample2 long %0000_000000000000000000000000_0000
 
 '        lg_channels long 1
 
@@ -248,23 +245,8 @@ mask_ones long $FFFFFFFF
         sample res 1
         temp res 1
         pattern res 1
-        preamble res 1
 
         fit 496
-CON
-  #0,CM_DISABLE,CM_PLLINT,CM_PLL,CM_PLLD,CM_NCO,CM_NCOD,CM_DUTY,CM_DUTYD,CM_POS,CM_POSF,CM_RISE,CM_RISEF,CM_NEG,CM_NEGF,CM_FALL,CM_FALLF
-
-  #0,PLLD_1_8,PLLD_1_4,PLLD_1_2,PLLD_1,PLLD_2,PLLD_4,PLLD_8,PLLD_16
-
-  #0,VM_NONE,VM_VGA,VM_COMP_BASELOW,VM_COMP_BASEHIGH
-
-  preamble_Z=%00010111
-  preamble_Y=%00100111
-  preamble_X=%01000111
-
-  preamble_Z_xor  =  preamble_Z ^ $33
-  preamble_Y_xor  =  preamble_Y ^ $33
-  preamble_X_xor  =  preamble_X ^ $33
 
 PUB write(subframeA,subframeB)
   subframes[0] := subframeA
@@ -289,8 +271,8 @@ PRI divround(x,y)
   return (x + (y/2))/y
 
 PRI calc_frq(rate_hz) | cf_up
-'  return 329860360 ' 48 kHz
-  return 659706977 ' 96 kHz
+  return 329860360 ' 48 kHz
+'  return 659706977 ' 96 kHz
 '  return 1319413953 ' 192 kHz
   ' calculate 2^32 * rate_hz/clkfreq
   cf_up:=divround(CLKFREQ,|<18)
