@@ -1,12 +1,10 @@
-
-
-- fused some of the Prop's upper pins high with experiments
+- fused some of the Prop's upper pins high with experiments? maybe just trying to use the USB pins
 - then found that 60 ohms wasn't enough - brownout protection would kill it after half a second because of excessive draw
 - tried 90 ohms and that was stable with confirmed signalling on pin 15
-
+- finally settled on a dual-fed LED with 16 kohm resistance to Vdd (to hold it active for faster switching) and 250 ohm resistance to signalling pin - this worked well (i.e. with air spacing between LED and fibre) with a 5m fibre
 
 EXTERNAL INTERFACE
 - one phono for S/PDIF
 - one TOSLINK socket
 - one rocker/throw switch to select 32 kHz or 96 kHz
-- one break-on-push button for interrupting power
+- one pushbutton for resetting the chip to account for a sample-rate change
