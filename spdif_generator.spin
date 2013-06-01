@@ -1,4 +1,7 @@
 VAR
+  long mycog
+
+  ' Parameters passed to the assembly routine running in cog with ID 'mycog'
   long _buffer
   long _frqa
   long _ctra
@@ -6,8 +9,6 @@ VAR
   long _posptr
   long _pinmask
   long _vcfg
-
-  long mycog
 
 CON
   #0,CM_DISABLE,CM_PLLINT,CM_PLL,CM_PLLD,CM_NCO,CM_NCOD,CM_DUTY,CM_DUTYD,CM_POS,CM_POSF,CM_RISE,CM_RISEF,CM_NEG,CM_NEGF,CM_FALL,CM_FALLF
@@ -27,7 +28,7 @@ CON
 DAT
         org 0
 _outcog2
-        ' load parameters into special registers 
+        ' load parameters into local registers 
         mov temp,par
         rdlong buffer,temp
         add temp,#4
@@ -59,12 +60,8 @@ _outcog2
 
         ' 192 kHz BUDGET IS 104 CLOCKS PER WAITVID, i.e. ABOUT 26 INSTRUCTIONS
 
-        wrlong posptr,#0
-
-        mov subframe,#0
-
         :block_loop
-              mov counter,#192
+              mov blk_counter,#192
               mov pattern,#preamble_Z_xor ' This is output for the first frame only
 
               mov inptr,buffer
@@ -73,8 +70,6 @@ _outcog2
                         ' Either a Z (first frame) or X (other channel-0 frames) preamble will already be in 'pattern'
                         rdlong sample,inptr
                         add inptr,#4
-'                        mov sample,bizzle
-'                        and sample,mask_sample
                          
                         testn sample,#0 wc
                         if_c or sample,mask_bit31                                     
@@ -95,9 +90,6 @@ _outcog2
                          
                         rdlong sample,inptr
                         add inptr,#4
-'                        mov sample,bizzle
-'                        neg sample,sample
-'                        and sample,mask_sample
                          
                         testn sample,#0 wc
                         if_c or sample,mask_bit31                                     
@@ -124,7 +116,7 @@ _outcog2
                          
                         mov pattern,#preamble_X_xor ' output X preamble for every even frame except frame 0
                          
-              djnz counter,#:frame_loop         
+              djnz blk_counter,#:frame_loop         
                
         jmp #:block_loop
 
@@ -171,8 +163,6 @@ bmc_encode_word_ret     ret
 
         ' //////////////////////////////////////////////////////////////////////
 
-bizzle long 4321<<12
-
         mask_low16 long $0000FFFF
         mask_bit15 long $00008000
         mask_bit31 long $80000000
@@ -184,6 +174,8 @@ bizzle long 4321<<12
         vcfg_vid long %0_01_0_0_0_000_00000000000_000_0_11111111 ' REMOVE THIS?
 
         pos long 0
+
+        subframe long 0
 
         bmc_table
         ' 00000000..00001111
@@ -237,8 +229,7 @@ bizzle long 4321<<12
 
         ' uninitialised assembly variables
         out_mask res 1
-        counter res 1
-        subframe res 1
+        blk_counter res 1
         sample res 1
         temp res 1
         pattern res 1
@@ -249,6 +240,12 @@ bizzle long 4321<<12
         fit 496
 
 PUB start(carrier_rate,pin,lg_div,buffer_in,posptr_out)
+  ' Initialising the position pointer here guarantees that it will be initialised to a sane value (i.e. 0) by the time
+  ' this function returns - if we initialised it inside the worker cog, there's a slim possibility that the caller
+  ' could read it before that point 
+  long[posptr_out] := 0
+
+  ' Pass parameters and start new cog
   _buffer := buffer_in
   _frqa := calc_frq(carrier_rate)
   _ctra := calc_ctr(CM_PLLINT,PLLD_1,0,0) 
@@ -267,6 +264,7 @@ PRI divround(x,y)
   return (x + (y/2))/y
 
 PRI calc_frq(rate_hz) | cf_up
+'  return 219902326 ' 32 kHz
 '  return 329860360 ' 48 kHz
   return 659706977 ' 96 kHz
 '  return 1319413953 ' 192 kHz
