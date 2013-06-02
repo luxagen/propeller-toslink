@@ -38,7 +38,8 @@ _gencog
 
         mov temp2,sample
         shl temp2,#4'#12
-        andn temp2,mask_vucp
+        andn temp2,mask_vucp wc
+        if_c or temp2,mask_bit31
         
         mov temp,writebyte
         add temp,buffer
@@ -68,6 +69,7 @@ _gencog
 
         sample long -16384
         mask_vucp long $F0000000
+        mask_bit31 long $80000000
 
         buffer res 1
         buffer_bytes res 1
@@ -87,4 +89,3 @@ PUB start(__buffer,__buffer_frames,__readsmp_ptr)
 
 PUB stop
   cogstop(mycog)
-

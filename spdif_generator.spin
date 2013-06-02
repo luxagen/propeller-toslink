@@ -71,9 +71,6 @@ _outcog2
                         rdlong sample,inptr
                         add inptr,#4
                          
-                        testn sample,#0 wc
-                        if_c or sample,mask_bit31                                     
-
                         ' //////////////////////////////////////////////////////
                         ' LEFT SUBFRAME
                          
@@ -91,9 +88,6 @@ _outcog2
                         rdlong sample,inptr
                         add inptr,#4
                          
-                        testn sample,#0 wc
-                        if_c or sample,mask_bit31                                     
-
                           ' We've just read the second sample, so we're done with the original frame in the input buffer
                         add pos,#1
                         wrlong pos,posptr

@@ -8,7 +8,7 @@ CON
   SPD_CR = SPD_SR*128           ' Symbol rate
 
   DEBUGGING=false
-  SPD_PIN = 1-(DEBUGGING&1)
+  SPD_PIN = 0-(DEBUGGING&1)
   LG_DIVIDER = (DEBUGGING&1)<<7
    
 OBJ
