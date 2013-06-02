@@ -37,7 +37,7 @@ _gencog
         if_a add sample,#1
 
         mov temp2,sample
-        shl temp2,#12
+        shl temp2,#4'#12
         andn temp2,mask_vucp
         
         mov temp,writebyte
