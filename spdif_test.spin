@@ -15,25 +15,21 @@ OBJ
   spdif : "spdif_generator"
   gen : "test_signal_generator"
 
-PUB Main | count,sample,sample_read,wpos
+PUB Main | count,sample,samples_read,wpos
 
-  sample := - 50 
+  sample := -50 
 
   repeat count from 0 to 191
     buffer[2*count] := mksmp16(sample)
     buffer[2*count + 1] := mksmp16(sample)
 
-'  ++sample
-                                                                                             
   buffer[382] := mksmp16(+500)
   buffer[383] := mksmp16(-500)
-  
-  spdif.start(SPD_CR,SPD_PIN,LG_DIVIDER,@buffer,@sample_read)
+          
+  samples_read:=192
+  gen.start(@buffer,192,@samples_read)
 
-'  repeat until (pos//384)>32
-'  repeat until (pos//384)<32
-
-  gen.start(@buffer,192,@sample_read)
+  spdif.start(SPD_CR,SPD_PIN,LG_DIVIDER,@buffer,@samples_read)
 
   repeat
   repeat

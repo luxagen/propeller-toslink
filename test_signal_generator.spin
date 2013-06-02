@@ -22,19 +22,20 @@ _gencog
         add temp,#4
         rdlong readsmp_ptr,temp
 
-        ' Get rid of this when proper waiting works
-        mov nextcnt,delay
-        shl nextcnt,#4
-        add nextcnt,cnt
+        andn outa,mask_leds
+        or dira,mask_leds
 
 :gen_loop
-        waitcnt nextcnt,delay
         ' keep reading posptr until it changes
-'        rdlong read,posptr
-'        cmp read,written wz,wc
-'        if_ae jmp #:gen_loop
+        rdlong frames_read,readsmp_ptr
+        cmp frames_read,frames_written wz,wc
+        if_e jmp #:gen_loop
 
-        add sample,#1
+        ' Prevent the sample from incrementing for the first (leadin) frames
+        cmp frames_written,leadin_frames wz,wc
+        if_e mov sample,#0
+        if_a add sample,#1
+
         mov temp2,sample
         shl temp2,#12
         andn temp2,mask_vucp
@@ -47,16 +48,25 @@ _gencog
         add writebyte,#8
         cmpsub writebyte,buffer_bytes
 
-'        add written,1
+        add frames_written,#1
+
+        mov temp,value_leds
+        and temp,mask_leds
+        andn outa,mask_leds
+        or outa,temp
+        rol value_leds,#1
 
         jmp #:gen_loop
 
-        delay long 833
+        leadin_frames long 384000
 
-        written long 0
+        mask_leds long $00FF0000
+        value_leds long $01010101
+
+        frames_written long 0
         writebyte long 0
 
-        sample long -50
+        sample long -16384
         mask_vucp long $F0000000
 
         buffer res 1
@@ -65,9 +75,7 @@ _gencog
 
         temp res 1
         temp2 res 1
-        read res 1
-
-        nextcnt res 1
+        frames_read res 1
 
         fit
 

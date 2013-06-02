@@ -264,6 +264,7 @@ PRI divround(x,y)
   return (x + (y/2))/y
 
 PRI calc_frq(rate_hz) | cf_up
+'  return 500000
 '  return 219902326 ' 32 kHz
 '  return 329860360 ' 48 kHz
   return 659706977 ' 96 kHz
