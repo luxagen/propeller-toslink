@@ -267,10 +267,10 @@ PRI calc_frq(rate_hz) | cf_up
   cf_up:=divround(CLKFREQ,|<18)
   return divround(rate_hz<<14,cf_up)
 
-  quotient := CLKFREQ/rate_hz
-  remainder := CLKFREQ//rate_hz
+'  quotient := CLKFREQ/rate_hz
+'  remainder := CLKFREQ//rate_hz
 
-  divround(-1,
+'  divround(-1,
 
   ' 2^32*rate_hz/CLKFREQ
 
@@ -281,8 +281,8 @@ PRI calc_vscl(pclks,fclks,lg_div)
   return (fclks<<lg_div)&((1<<12)-1) | (pclks<<(12+lg_div))
 
 PRI calc_vcfg(vmode,cmode,chroma1,chroma0,auralsub,vgroup,vpins)
-  if vpins&$8
-    abort VM_NONE
+'  if vpins&$8
+'    abort VM_NONE
 
   return vcfg_vid|(vgroup<<9)
   return (((((((((((vmode<<1) + cmode)<<1) + chroma1)<<1) + chroma0)<<3) + auralsub)<<14) + vgroup)<<9) + vpins
