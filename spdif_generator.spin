@@ -267,6 +267,13 @@ PRI calc_frq(rate_hz) | cf_up
   cf_up:=divround(CLKFREQ,|<18)
   return divround(rate_hz<<14,cf_up)
 
+  quotient := CLKFREQ/rate_hz
+  remainder := CLKFREQ//rate_hz
+
+  divround(-1,
+
+  ' 2^32*rate_hz/CLKFREQ
+
 PRI calc_ctr(mode,plldiv,apin,bpin)
   return ((mode << 3 + plldiv) << 14 + bpin) << 9 + apin
 
