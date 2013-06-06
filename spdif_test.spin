@@ -2,12 +2,13 @@ VAR
   long buffer[384]
   long subcodes[12]
 CON
+  ' MINIMUM VALUE OF (CLKFREQ/SAMPLE_RATE) THAT WORKS IS ~655
   _clkmode = xtal1+pll16x
   _xinfreq=5000000
 
-  SPD_SR = 32000                ' Sample rate
+  SPD_SR = 44100                ' Sample rate
   SPD_VGROUP=0
-  SPD_VPINS=%00000001
+  SPD_VPINS=%00000010
 
   DEBUGGING=false
   LG_DIVIDER = (DEBUGGING&1)<<7
@@ -19,13 +20,13 @@ CON
   CQ_NORMAL=%00
   CQ_HIGH  =%01
   CQ_LOW   =%10
-
+                         
   CC_CD      =%00000001
   CC_DAT     =%00000011
   CC_ORIGINAL=%00000000   
 OBJ
   spdif : "spdif_generator"
-  gen : "test_signal_generator"
+  gen   : "test_signal_generator"
 
 PUB Main | count,sample,samples_read,wpos
 

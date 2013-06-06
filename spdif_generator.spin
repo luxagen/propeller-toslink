@@ -236,9 +236,18 @@ bmc_encode_word_ret     ret
         fit 496
 
 PUB start(sample_rate,lg_div,buffer_in,posptr_out,vgroup,vpins)
-  if (calc_frq(sample_rate)==fixed_frq(sample_rate))
+  dira[23]:=1
+  dira[22]:=1 
+  dira[21]:=1 
+   
+  if calc_frq(sample_rate)==fixed_frq(sample_rate)
     outa[23]:=1
-    dira[23]:=1
+
+  if clkfreq==80000000
+    outa[22]:=1
+
+  if clkfreq==40000000
+    outa[21]:=1
 
   ' Initialising the position pointer here guarantees that it will be initialised to a sane value (i.e. 0) by the time
   ' this function returns - if we initialised it inside the worker cog, there's a slim possibility that the caller
@@ -275,32 +284,26 @@ case sample_rate
 PRI calc_frq(sample_rate) | cf_up,divisor,quotient,remainder
   ' This calculates ((2^32)/CLKFREQ)*rate_hz in 32-bit signed arithmetic using involved overflow-dodging tricks
 
-  divisor := CLKFREQ/4000
+  divisor := CLKFREQ/400
 
-  quotient := $40000000/divisor                         ' 53,687
-  remainder := $40000000//divisor                    ' possible 20000
+  quotient := $40000000/divisor                         ' 10,737                41,824           
+  remainder := $40000000//divisor                       ' possible 20000
 
   ' Remaining coefficient: 128*sample_rate*(4/4000)
 
-  quotient *= sample_rate/100                           ' 103,079,040
+  quotient *= sample_rate/100                           ' 3,435,840             13,383,680
   remainder *= sample_rate/100                          ' possible 38,400,000
 
-  quotient += remainder/divisor                         ' 103,079,215
-  remainder//=divisor                                ' possible 20,000
+  quotient += remainder/divisor                         ' 3,435,973             83,680         
+  remainder//=divisor                                   ' possible 20,000
 
-  ' Remaining coefficient: 128*100*(4/4000) = 128/10
+  ' Remaining coefficient: 128*100*(4/400) = 128
 
-  remainder += (quotient//10)*divisor                ' possible 120000
-  quotient/=10                                          ' 10,307,921 
-
-  ' Effective divisor is now (divisor*10)
-
-  quotient<<=7                                          ' 1,319,413,888
+  quotient<<=7                                          ' 439,804,544           10,711,040               
   remainder<<=7                                         ' possible 15,360,000
 
   ' Process the remainder to give the integer FRQA value nearest to the correct one
-  divisor*=5
-  return quotient + (remainder+divisor)/(divisor<<1)
+  return quotient + (remainder + divisor/2)/divisor     ' 439804651
 
 PRI calc_ctr(mode,plldiv,apin,bpin)
   return ((mode << 3 + plldiv) << 14 + bpin) << 9 + apin

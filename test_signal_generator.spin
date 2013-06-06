@@ -74,12 +74,19 @@ gen_smp_group
          
         ' Prevent the sample from incrementing for the first (leadin) frames
         cmp frames_written,leadin_frames wz,wc
+
         if_e mov sample,#0 ' First non-lead-in sample is zero...
-        if_a add sample,#32 ' ...and they increment from there
-         
+        if_a add sample,increment ' ...and they increment from there
         mov temp2,sample
-        shl temp2,#4
+        sar temp2,#5
+
+'        if_e mov sample,dummy
+'        if_a neg sample,sample
+'        mov temp2,sample
+'        sar temp2,#4
+
         and temp2,mask_sample ' Clear special bits (the preamble will be left blank by the shift above)
+
         ' Set user and control bits from subcode table
         rcr reg_user,#1 wc
         if_c or temp2,mask_u
@@ -134,7 +141,7 @@ copy_subcodes
         add temp,#4
         rdlong buf_ctrl+5,temp        
 copy_subcodes_ret ret
-        
+
         leadin_frames long 384000
 
         mask_leds long $00FF0000
@@ -144,6 +151,8 @@ copy_subcodes_ret ret
         writebyte long 0
 
         sample long -16384
+        increment long 10<<17
+'        dummy long 1<<16       
 
 '        mask_iucp long $F0000000
         mask_sample long $0FFFFFF0
