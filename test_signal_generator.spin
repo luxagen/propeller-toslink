@@ -36,50 +36,59 @@ _gencog
         mov reg_ctrl,buf_ctrl+0
         mov reg_user,buf_user+0
         mov counter,#32
-        call #gen_smp_32
+        call #gen_smp_group
         ' Set up two subcode registers from table and emit 32 samples
         mov reg_ctrl,buf_ctrl+1
         mov reg_user,buf_user+1
         mov counter,#32
-        call #gen_smp_32
+        call #gen_smp_group
         ' Set up two subcode registers from table and emit 32 samples
         mov reg_ctrl,buf_ctrl+2
         mov reg_user,buf_user+2
         mov counter,#32
-        call #gen_smp_32
+        call #gen_smp_group
         ' Set up two subcode registers from table and emit 32 samples
         mov reg_ctrl,buf_ctrl+3
         mov reg_user,buf_user+3
         mov counter,#32
-        call #gen_smp_32
+        call #gen_smp_group
         ' Set up two subcode registers from table and emit 32 samples
         mov reg_ctrl,buf_ctrl+4
         mov reg_user,buf_user+4
         mov counter,#32
-        call #gen_smp_32
+        call #gen_smp_group
         ' Set up two subcode registers from table and emit 32 samples
         mov reg_ctrl,buf_ctrl+5
         mov reg_user,buf_user+5
         mov counter,#32
-        call #gen_smp_32
+        call #gen_smp_group
 jmp #:new_loop
 
-gen_smp_32
+' Generating 96 kHz S/PDIF at a clock rate of 32.768 MHz allows 341 cycles per stereo sample, and this loop has a worst-
+' case runtime of 176 cycles (156 cycles without the indicator-LED code), so this should never be a bottleneck 
+gen_smp_group
         ' keep reading posptr until it changes
         rdlong frames_read,readsmp_ptr
         cmp frames_read,frames_written wz,wc
-        if_e jmp #gen_smp_32
+        if_e jmp #gen_smp_group
          
         ' Prevent the sample from incrementing for the first (leadin) frames
         cmp frames_written,leadin_frames wz,wc
-        if_e mov sample,#0
-        if_a add sample,#1
+        if_e mov sample,#0 ' First non-lead-in sample is zero...
+        if_a add sample,#32 ' ...and they increment from there
          
         mov temp2,sample
-        shl temp2,#4'#12
-        andn temp2,mask_vucp wc
-        if_c or temp2,mask_bit31
-         
+        shl temp2,#4
+        and temp2,mask_sample ' Clear special bits (the preamble will be left blank by the shift above)
+        ' Set user and control bits from subcode table
+        rcr reg_user,#1 wc
+        if_c or temp2,mask_u
+        rcr reg_ctrl,#1 wc
+        if_c or temp2,mask_c wc ' Save overall parity...
+        ' ...and encode it too
+        if_c or temp2,mask_p
+
+        ' Write the sample to the destination buffer twice for stereo
         mov temp,writebyte
         add temp,buffer
         wrlong temp2,temp
@@ -88,16 +97,17 @@ gen_smp_32
         add writebyte,#8
         cmpsub writebyte,buffer_bytes
          
-        add frames_written,#1
+        add frames_written,#1 ' Inform the consumer that it has a new stereo sample
+
+        ' Show a visible indication         
+'        mov temp,value_leds
+'        and temp,mask_leds
+'        andn outa,mask_leds
+'        or outa,temp
+'        rol value_leds,#1
          
-        mov temp,value_leds
-        and temp,mask_leds
-        andn outa,mask_leds
-        or outa,temp
-        rol value_leds,#1
-         
-        djnz counter,#gen_smp_32
-gen_smp_32_ret ret
+        djnz counter,#gen_smp_group
+gen_smp_group_ret ret
                
 copy_subcodes
         rdlong buf_ctrl+0,temp
@@ -134,8 +144,12 @@ copy_subcodes_ret ret
         writebyte long 0
 
         sample long -16384
-        mask_vucp long $F0000000
-        mask_bit31 long $80000000
+
+'        mask_iucp long $F0000000
+        mask_sample long $0FFFFFF0
+        mask_u long $20000000
+        mask_c long $40000000
+        mask_p long $80000000
 
         buffer res 1
         buffer_bytes res 1

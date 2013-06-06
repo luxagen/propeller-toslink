@@ -5,11 +5,11 @@ CON
   _clkmode = xtal1+pll16x
   _xinfreq=5000000
 
-  SPD_SR = 48000                ' Sample rate
-  SPD_CR = SPD_SR*128           ' Symbol rate
+  SPD_SR = 32000                ' Sample rate
+  SPD_VGROUP=0
+  SPD_VPINS=%00000001
 
   DEBUGGING=false
-  SPD_PIN = 1-(DEBUGGING&1)
   LG_DIVIDER = (DEBUGGING&1)<<7
 
   SR_32=%0011
@@ -29,7 +29,7 @@ OBJ
 
 PUB Main | count,sample,samples_read,wpos
 
-  make_spdif_control_block(0,1,CC_ORIGINAL,0,SR_44,CQ_NORMAL)
+  make_spdif_control_block(0,1,CC_ORIGINAL,0,SR_32,CQ_NORMAL)
 
   sample := -50 
 
@@ -43,7 +43,7 @@ PUB Main | count,sample,samples_read,wpos
   samples_read:=192
   gen.start(@buffer,192,@samples_read,@subcodes)
 
-  spdif.start(SPD_CR,SPD_PIN,LG_DIVIDER,@buffer,@samples_read)
+  spdif.start(SPD_SR,LG_DIVIDER,@buffer,@samples_read,SPD_VGROUP,SPD_VPINS)
 
   repeat
   repeat

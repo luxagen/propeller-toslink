@@ -12,10 +12,8 @@ VAR
 
 CON
   #0,CM_DISABLE,CM_PLLINT,CM_PLL,CM_PLLD,CM_NCO,CM_NCOD,CM_DUTY,CM_DUTYD,CM_POS,CM_POSF,CM_RISE,CM_RISEF,CM_NEG,CM_NEGF,CM_FALL,CM_FALLF
-
   #0,PLLD_1_8,PLLD_1_4,PLLD_1_2,PLLD_1,PLLD_2,PLLD_4,PLLD_8,PLLD_16
-
-  #0,VM_NONE,VM_VGA,VM_COMP_BASELOW,VM_COMP_BASEHIGH
+'  #0,VM_NONE,VM_VGA,VM_COMP_BASELOW,VM_COMP_BASEHIGH
 
   preamble_Z=%00010111
   preamble_Y=%00100111
@@ -24,6 +22,8 @@ CON
   preamble_Z_xor  =  preamble_Z ^ $33 ' %00100100
   preamble_Y_xor  =  preamble_Y ^ $33 ' %00010100
   preamble_X_xor  =  preamble_X ^ $33 ' %01110100
+
+  one_billion = 1<<30
 
 DAT
         org 0
@@ -54,12 +54,14 @@ _outcog2
         ' generator should now be safely outputting the zero word we queued above, so we can re-enable its output
         or dira,out_mask
 
-        ' Assuming that the margins in the following loop are razor-thin, we might not be able to afford the 3 extra
-        ' instructions since the zero word was written, so to be safe we must queue another one just before entering
+        ' Assuming that the margins in the following loop are razor-thin, the previous 2 instructions might have used
+        ' up some of the preceding WAITVID's breathing-room; if this is needed by the loop, the first output might
+        ' stutter, so to be safe we must queue another one just before entering 
         waitvid palette,#0
 
-        ' 192 kHz BUDGET IS 104 CLOCKS PER WAITVID, i.e. ABOUT 26 INSTRUCTIONS
-
+        ' Generating 96 kHz S/PDIF at a clock rate of 32.768 MHz allows 341 cycles per stereo sample, and this loop has
+        ' a worst-case runtime of 556 instructions, so that will never be achievable; 192 kHz is achievable with a
+        ' custom 110 MHz clock, and might be possible at lower speeds with inlining/optimisation 
         :block_loop
               mov blk_counter,#192
               mov pattern,#preamble_Z_xor ' This is output for the first frame only
@@ -123,39 +125,41 @@ _outcog2
 ' uses:
 '       temp,pattern        
 bmc_encode_word
-                        ' Encode first byte
+                        ' Load the word's low byte
                         mov temp,sample
                         and temp,#$FF
-
-                        shr temp,#1 wc ' generate the number of the register we want from the BMC table
-                        add temp,#bmc_table ' temp now contains the register number of the entry we want
-                        movs $+2,temp ' modify the read instruction
-                        test subframe,mask_bit31 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
-                        xor pattern,0-0 ' will be modified to read correct entry
-                        if_nz xor pattern,mask_ones ' invert pattern according to previous finish state
-                        ' select the correct subentry and zero the rest
+                        ' Convert the byte into a BMC pattern
+                        shr temp,#1 wc                  ' Generate the number of the long (pair of 16-bit entries) we want from the BMC table
+                        add temp,#bmc_table             ' (temp) now contains the cog address of the entry we want
+                        movs $+2,temp                   ' Set the read instruction to that source
+                        test subframe,mask_bit31 wz     ' Use this buffering instruction slot to find out whether to invert the lookup result
+                        xor pattern,0-0                 ' Perform the table read (modified by the MOVS 2 instructions ago), XORing to allow for preamble
+                        if_nz xor pattern,mask_ones     ' Invert the pattern according to the state on which the previous pattern ended
+                        ' Select one 16-bit entry from the pair to move into final position and clear the rest 
                         if_nc and pattern,mask_low16
                         if_c shr pattern,#16
-                        mov subframe,pattern 
+                        mov subframe,pattern            ' Save the encoded lower half for merging 
 
-                        ' Encode second byte
+                        ' Load the word's high byte 
                         mov temp,sample
                         shr temp,#8
                         and temp,#$FF
-
-                        shr temp,#1 wc ' generate the number of the register we want from the BMC table
-                        add temp,#bmc_table ' temp now contains the register number of the entry we want
-                        movs $+2,temp ' modify the read instruction
-                        test subframe,mask_bit15 wz ' find out whether to invert the lookup result (also buffer next instruction after modification)
-                        mov pattern,0-0 ' will be modified to read correct entry
-                        if_nz xor pattern,mask_ones ' invert pattern according to previous finish state
-                        ' select the correct subentry and zero the rest
+                        ' Convert the byte into a BMC pattern
+                        shr temp,#1 wc                  ' Generate the number of the long (pair of 16-bit entries) we want from the BMC table
+                        add temp,#bmc_table             ' (temp) now contains the cog address of the entry we want
+                        movs $+2,temp                   ' Set the read instruction to that source
+                        test subframe,mask_bit15 wz     ' Use this buffering instruction slot to find out whether to invert the lookup result
+                        mov pattern,0-0                 ' Perform the table read (modified by the MOVS 2 instructions ago)
+                        if_nz xor pattern,mask_ones     ' Invert the pattern according to the state on which the previous pattern ended
+                        ' Select one 16-bit entry from the pair to move into final position and clear the rest 
                         if_nc shl pattern,#16
                         if_c andn pattern,mask_low16                        
-                        or subframe,pattern
+                        or subframe,pattern             ' Merge the encoded upper half to produce a 32-bit BMC pattern for the 16-bit word
 bmc_encode_word_ret     ret                        
 
         ' //////////////////////////////////////////////////////////////////////
+
+        vcfg_vid long %0_01_0_0_0_000_00000000000_000_0_11111111
 
         mask_low16 long $0000FFFF
         mask_bit15 long $00008000
@@ -163,10 +167,8 @@ bmc_encode_word_ret     ret
         mask_ones long $FFFFFFFF
         mask_sample long $0FFFFFF0
          
-        palette long $FF_00
+        palette long $55_AA
         
-        vcfg_vid long %0_01_0_0_0_000_00000000000_000_0_11111111 ' REMOVE THIS?
-
         pos long 0
 
         subframe long 0
@@ -233,7 +235,11 @@ bmc_encode_word_ret     ret
 
         fit 496
 
-PUB start(carrier_rate,pin,lg_div,buffer_in,posptr_out)
+PUB start(sample_rate,lg_div,buffer_in,posptr_out,vgroup,vpins)
+  if (calc_frq(sample_rate)==fixed_frq(sample_rate))
+    outa[23]:=1
+    dira[23]:=1
+
   ' Initialising the position pointer here guarantees that it will be initialised to a sane value (i.e. 0) by the time
   ' this function returns - if we initialised it inside the worker cog, there's a slim possibility that the caller
   ' could read it before that point 
@@ -241,12 +247,12 @@ PUB start(carrier_rate,pin,lg_div,buffer_in,posptr_out)
 
   ' Pass parameters and start new cog
   _buffer := buffer_in
-  _frqa := calc_frq(carrier_rate)
+  _frqa := calc_frq(sample_rate)
   _ctra := calc_ctr(CM_PLLINT,PLLD_1,0,0) 
   _vscl := calc_vscl(1,32,lg_div)
-  _vcfg := calc_vcfg2(pin)
+  _vcfg := vcfg_vid|(vgroup<<9)|vpins
   _posptr := posptr_out
-  _pinmask := |<pin
+  _pinmask := vpins<<(vgroup<<3)
   mycog:=cognew(@_outcog2,@_buffer)
 
 PUB stop
@@ -257,40 +263,47 @@ PUB stop
 PRI divround(x,y)
   return (x + (y/2))/y
 
-PRI calc_frq(rate_hz) | cf_up
-'  return 500000
-'  return 219902326 ' 32 kHz
-'  return 329860360 ' 48 kHz
-  return 659706977 ' 96 kHz
-'  return 1319413953 ' 192 kHz
-  ' calculate 2^32 * rate_hz/clkfreq
-  cf_up:=divround(CLKFREQ,|<18)
-  return divround(rate_hz<<14,cf_up)
+PRI fixed_frq(sample_rate)
+case sample_rate
+  16000:  return  109951163 '  16   kHz                 
+  32000:  return  219902326 '  32   kHz
+  44100:  return  303052892 '  44.1 kHz
+  48000:  return  329853488 '  48   kHz
+  96000:  return  659706977 '  96   kHz
+  192000: return 1319413953 ' 192   kHz
 
-'  quotient := CLKFREQ/rate_hz
-'  remainder := CLKFREQ//rate_hz
+PRI calc_frq(sample_rate) | cf_up,divisor,quotient,remainder
+  ' This calculates ((2^32)/CLKFREQ)*rate_hz in 32-bit signed arithmetic using involved overflow-dodging tricks
 
-'  divround(-1,
+  divisor := CLKFREQ/4000
 
-  ' 2^32*rate_hz/CLKFREQ
+  quotient := $40000000/divisor                         ' 53,687
+  remainder := $40000000//divisor                    ' possible 20000
+
+  ' Remaining coefficient: 128*sample_rate*(4/4000)
+
+  quotient *= sample_rate/100                           ' 103,079,040
+  remainder *= sample_rate/100                          ' possible 38,400,000
+
+  quotient += remainder/divisor                         ' 103,079,215
+  remainder//=divisor                                ' possible 20,000
+
+  ' Remaining coefficient: 128*100*(4/4000) = 128/10
+
+  remainder += (quotient//10)*divisor                ' possible 120000
+  quotient/=10                                          ' 10,307,921 
+
+  ' Effective divisor is now (divisor*10)
+
+  quotient<<=7                                          ' 1,319,413,888
+  remainder<<=7                                         ' possible 15,360,000
+
+  ' Process the remainder to give the integer FRQA value nearest to the correct one
+  divisor*=5
+  return quotient + (remainder+divisor)/(divisor<<1)
 
 PRI calc_ctr(mode,plldiv,apin,bpin)
   return ((mode << 3 + plldiv) << 14 + bpin) << 9 + apin
 
 PRI calc_vscl(pclks,fclks,lg_div)
   return (fclks<<lg_div)&((1<<12)-1) | (pclks<<(12+lg_div))
-
-PRI calc_vcfg(vmode,cmode,chroma1,chroma0,auralsub,vgroup,vpins)
-'  if vpins&$8
-'    abort VM_NONE
-
-  return vcfg_vid|(vgroup<<9)
-  return (((((((((((vmode<<1) + cmode)<<1) + chroma1)<<1) + chroma0)<<3) + auralsub)<<14) + vgroup)<<9) + vpins
-
-PRI calc_vcfg2(pin) | vgroup,subgroup
-  vgroup := pin/8
-  pin//=8
-  subgroup := pin/4
-'  pin//=4
-
-  return calc_vcfg(VM_COMP_BASELOW+subgroup,0,0,0,0,vgroup,1<<pin)
