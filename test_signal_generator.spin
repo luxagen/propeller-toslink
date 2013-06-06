@@ -6,6 +6,7 @@ VAR
   long _buffer_frames
   long _readsmp_ptr
   long _subcodes_ptr
+  long _step
 
 DAT
         org 0
@@ -27,6 +28,10 @@ _gencog
         add temp,#4
         rdlong temp,temp
         call #copy_subcodes
+
+        mov temp,par
+        add temp,#16
+        rdlong increment,temp
 
         andn outa,mask_leds
         or dira,mask_leds
@@ -67,9 +72,9 @@ jmp #:new_loop
 ' Generating 96 kHz S/PDIF at a clock rate of 32.768 MHz allows 341 cycles per stereo sample, and this loop has a worst-
 ' case runtime of 176 cycles (156 cycles without the indicator-LED code), so this should never be a bottleneck 
 gen_smp_group
-        ' keep reading posptr until it changes
-        rdlong frames_read,readsmp_ptr
-        cmp frames_read,frames_written wz,wc
+        ' Keep reading the consumer's position until it changes
+        rdlong temp,readsmp_ptr
+        cmp temp,frames_written wz,wc
         if_e jmp #gen_smp_group
          
         ' Prevent the sample from incrementing for the first (leadin) frames
@@ -79,11 +84,6 @@ gen_smp_group
         if_a add sample,increment ' ...and they increment from there
         mov temp2,sample
         sar temp2,#5
-
-'        if_e mov sample,dummy
-'        if_a neg sample,sample
-'        mov temp2,sample
-'        sar temp2,#4
 
         and temp2,mask_sample ' Clear special bits (the preamble will be left blank by the shift above)
 
@@ -142,7 +142,7 @@ copy_subcodes
         rdlong buf_ctrl+5,temp        
 copy_subcodes_ret ret
 
-        leadin_frames long 384000
+        leadin_frames long 88200
 
         mask_leds long $00FF0000
         value_leds long $01010101
@@ -151,8 +151,6 @@ copy_subcodes_ret ret
         writebyte long 0
 
         sample long -16384
-        increment long 10<<17
-'        dummy long 1<<16       
 
 '        mask_iucp long $F0000000
         mask_sample long $0FFFFFF0
@@ -177,14 +175,16 @@ copy_subcodes_ret ret
         counter res 1
         reg_ctrl res 1
         reg_user res 1
+        increment res 1
 
         fit
 
-PUB start(__buffer,__buffer_frames,__readsmp_ptr,__subcodes_ptr)
+PUB start(__sample_rate,__buffer,__buffer_frames,__readsmp_ptr,__subcodes_ptr)
   _buffer:=__buffer
   _buffer_frames:=__buffer_frames
   _readsmp_ptr:=__readsmp_ptr
   _subcodes_ptr:=__subcodes_ptr
+  _step := ((32768*1000 + __sample_rate/2)/__sample_rate)<<17
 
   mycog:=cognew(@_gencog,@_buffer)
 

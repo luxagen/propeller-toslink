@@ -28,7 +28,7 @@ CON
 DAT
         org 0
 _outcog2
-        ' load parameters into local registers 
+        ' Load parameters into local memory
         mov temp,par
         rdlong buffer,temp
         add temp,#4

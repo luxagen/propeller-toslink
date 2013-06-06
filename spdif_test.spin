@@ -41,8 +41,9 @@ PUB Main | count,sample,samples_read,wpos
   buffer[382] := mksmp16(+500)
   buffer[383] := mksmp16(-500)
           
-  samples_read:=192
-  gen.start(@buffer,192,@samples_read,@subcodes)
+'  samples_read:=192
+  samples_read:=0
+  gen.start(SPD_SR,@buffer,192,@samples_read,@subcodes)
 
   spdif.start(SPD_SR,LG_DIVIDER,@buffer,@samples_read,SPD_VGROUP,SPD_VPINS)
 
