@@ -1,0 +1,939 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0//EN">
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<title>Digital Communication</title>
+</head>
+<body bgcolor="#ffffff"> 
+<div>
+<h1 class="Title">
+<a name="pgfId-998200"></a>Digital Communication
+</h1>
+<div>
+<h2 class="Heading1">
+<a name="pgfId-998201"></a>Introduction</h2>
+<p class="Body">
+<a name="pgfId-998205"></a>In Figure 1 an overview of the typical functional elements of a digital communication system are shown. </p>
+<div>
+<p align="center">
+<img src="Digital%20Communication_files/digcom-2.gif">
+</p>
+</div>
+<h5 class="FigureTitle" align="center">
+Figure 1: Digital Communication System</h5>
+<p class="Body">
+<a name="pgfId-998214"></a>The information source generates particular 
+symbols at a particular rate. The source encoder translates these 
+symbols in sequences of 0's and 1's. The channel encoder is oriented 
+towards translating sequences of 0's and 1's to other sequences of 0's 
+and 1's, to realize high transmission reliability and efficiency. The 
+modulator accepts streams of 0's and 1's, and converts them to 
+electrical waveforms suitable for transmission. </p>
+<p class="Body">
+<a name="pgfId-998215"></a>The communication channel provides the 
+electrical connection between the source and destination. It has a 
+finite bandwidth, and the waveform transmitted suffers from amplitude 
+distortion and phase distortion. In addition to distortion, power is 
+decreased due to attenuation of the channel. Finally, the waveform is 
+corrupted by unwanted electrical signals, referred to as noise. The 
+primary objective of a communication system is to suppress the bad 
+effects of noise as much as possible. </p>
+<p class="Body">
+<a name="pgfId-998216"></a>The inverse process takes place at the 
+destination side. The demodulator converts the electrical waveforms to 
+sequences of 0's and 1's, the channel decoder translates the sequence of
+ 0's and 1's to the original sequence of 0's and 1's. It also performs 
+error correction and clock recovery. The source decoder finally 
+translates the sequence of 0's and 1's into symbols. </p>
+<p class="Body">
+<a name="pgfId-998220"></a>The gray boxes in the following figure show 
+how the elements are grouped in a digital audio configuration, in this 
+case a CD player and a DA-convertor. </p>
+</div>
+<div>
+<h2 class="Heading1">
+<a name="pgfId-998221"></a>Information source</h2>
+<p class="Body">
+<a name="pgfId-998222"></a>The main digital source for consumer purpose 
+is the CD-player. This section will present a short summary about the 
+history and principles of a CD-player. It is derived from a document of 
+Grant M. Erickson, e.g. see <a href="http://www.tc.umn.edu/%7Eerick205/Papers/paper.html">A Fundamental Introduction to the Compact Disc Player</a>. </p>
+<div>
+<h3 class="Heading2">
+<a name="pgfId-998223"></a>The history of the CD player</h3>
+<p class="Body">
+<a name="pgfId-998224"></a>As staggering as the release of the compact 
+disc player was in 1982, the technology and theories which allowed it to
+ be born were long in development. In 1841, the great mathematician 
+Augustin-Louis Cauchy first proposes the sampling theorem. Nearly 80 
+years later J.R. Carson publishes a mathematical analysis of time 
+sampling in communications. In a 1928 lecture at the American Institute 
+of Electrical Engineers Harry Nyquist provides proof of the sampling 
+theorem in "Certain Topics in Telegraph Transmission Theory". In 1937, 
+A. Reeves proposes pulse code wave modulation (PCM). In 1948, John 
+Bordeen, William Shockley, and Walter Brattain invent the bipolar 
+junction transistor at Bell Labs--compact digital circuitry is a 
+reality. Two years later, in 1950 Richard W. Hamming publishes 
+significant work on error correction and detection codes. In 1958 C.H. 
+Townes and A.L. Shawlow invent the laser. In 1960 R.C. Bose publishes 
+binary group error correction codes. That same year I.S. Reed and G. 
+Solomon publish error correction codes to be used in the CD player 22 
+years later. Also early computer music experiments take place at Bell 
+Labs. Fifteen years before consumers see the first player, NHK Technical
+ Research Institute publicly demonstrates a PCM digital audio recorder 
+with a 30 kHz sampling rate and 12-bit resolution. Two years later, Sony
+ Corporation demonstrates a PCM digital audio recorder with a 47.25 kHz 
+sampling rate and 13-bit resolution. A hemisphere away, Dutch physicist 
+Klaas Compaan uses a glass disc to store black and white holographic 
+images using frequency modulation at Philips Laboratories. Four years 
+later, in 1973 Philips engineers begin to contemplate an audio 
+application for their "video" disc system. A prototype disc with a 44 
+kHz sampling rate is run through a 14-bit digital-to-analog converter 
+and exhibits a signal-to-noise (S/N) ratio of 80 dB in monaural. Now a 
+research frontier, Mitsubishi, Sony, and Hitachi all demonstrate digital
+ audio discs at the Tokyo Audio Fair in 1977. One year later, Philips 
+joins with its recording subsidiary Polygram Records to develop a 
+worldwide digital audio standard. In March 1979, Philips demonstrates a 
+prototype compact disc player in Europe. Sony joins the Philips/Polygram
+ coalition after Matsushita declines. In June of 1980, the coalition 
+formally proposes their CD standard. A year later in 1981, Sharp 
+successfully mass produces the semiconductor laser. This step was 
+crucial to delivering a consumer product. In Fall of 1982 nearly 150 
+years of work comes to fruition and Sony and Philips introduce their 
+respective players to consumer in Europe. The following spring, the 
+player is introduced in the United States. </p>
+<p class="Body">
+<a name="pgfId-998225"></a>The specifications for the compact disc and 
+compact disc players were jointly developed by Sony, Philips, and 
+Polygram as mentioned previously. This specification is contained in 
+their standards document referred to as the Red Book. Some of these 
+specifications are summarized in Table 1, 2 and 3.</p>
+<h5 class="TableTitle">
+<a name="pgfId-998235"></a><a name="15686"></a>Table 1: Disc format</h5><table border="1">
+
+<tbody><tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998239"></a>Playing time</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998241"></a>74 minutes, 33 seconds maximum</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998243"></a>Rotation</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998245"></a>1.2 - 1.4 m/sec. (constant linear velocity)</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998247"></a>Track pitch</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998249"></a>1.6 <em class="Symbol">
+&#956;</em>
+m</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998251"></a>Diameter</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998253"></a>120 mm</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998255"></a>Thickness</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998257"></a>1.2 mm</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998259"></a>Center hole diameter</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998261"></a>15 mm</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998263"></a>Recording area</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998265"></a>46 mm - 117 mm</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998267"></a>Signal area</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998269"></a>50 mm - 116 mm</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998271"></a>Material</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998273"></a>Any acceptable medium with a refraction index of 1.55</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998275"></a>Minimum pit length</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998277"></a>0.833 <em class="Symbol">
+&#956;</em>
+m (1.2 m/sec) to 0.972 <em class="Symbol">
+&#956;</em>
+m (1.4 m/sec)</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998279"></a>Maximum pit length</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998281"></a>3.05 <em class="Symbol">
+&#956;</em>
+m (1.2 m/sec) to 3.56 <em class="Symbol">
+&#956;</em>
+m (1.4 m/sec)</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998283"></a>Pit depth</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998285"></a>~0.11 <em class="Symbol">
+&#956;</em>
+m</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998287"></a>Pit width</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998289"></a>~0.5 <em class="Symbol">
+&#956;</em>
+m</p>
+</td>
+</tr>
+</tbody></table>
+<br>
+<h5 class="TableTitle">
+<a name="pgfId-998292"></a>Table 2: Optical system</h5><table border="1">
+
+<tbody><tr>
+<th rowspan="1" colspan="1">
+<p class="CellHeading">
+<a name="pgfId-998296"></a>&nbsp;</p>
+</th>
+<th rowspan="1" colspan="1">
+<p class="CellHeading">
+<a name="pgfId-998298"></a>&nbsp;</p>
+</th>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998300"></a>Standard wavelength</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998302"></a>780 nm</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998304"></a>Focal depth</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998306"></a><em class="Symbol">
+±</em>
+ 2 <em class="Symbol">
+&#956;</em>
+m</p>
+</td>
+</tr>
+</tbody></table><br>
+<h5 class="TableTitle">
+<a name="pgfId-998310"></a><a name="25104"></a>Table 3: Signal format</h5><table border="1">
+
+<tbody><tr>
+<th rowspan="1" colspan="1">
+<p class="CellHeading">
+<a name="pgfId-998314"></a>&nbsp;</p>
+</th>
+<th rowspan="1" colspan="1">
+<p class="CellHeading">
+<a name="pgfId-998316"></a>&nbsp;</p>
+</th>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998318"></a>Number of channels</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998320"></a>2 channels (4 channel recording possible)</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998322"></a>Quantization</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998324"></a>16-bit linear</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998326"></a>Quantizing timing</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998328"></a>Concurrent for all channels</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998330"></a>Sampling frequency</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998332"></a>44.1 kHz</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998334"></a>Channel bit rate</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998336"></a>4.3218 Mb/sec</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998338"></a>Data bit rate</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998340"></a>2.0338 Mb/sec</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998342"></a>Error correction code</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998344"></a>Cross Interleave Reed-Solomon Code (with 25% redundancy)</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998346"></a>Modulation system</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998348"></a>Eight-to-fourteen Modulation (EFM)</p>
+</td>
+</tr>
+</tbody></table>
+<p class="Body">
+<a name="pgfId-998349"></a>The compact disc player contains two main 
+subsystems: the audio data processing system and the servo/control 
+system. The servo, control, and display system orchestrate the 
+mechanical operation of the player and include such items as the spindle
+ motor, auto-tracking, lens focus, and the user interface. The audio 
+data processing section covers all other player processes.</p>
+</div>
+</div>
+<div>
+<h2 class="Heading1">
+<a name="pgfId-998350"></a>Source encoding/decoding</h2>
+<p class="Body">
+<a name="pgfId-998351"></a>Digital data provided by digital sources like
+ CD, DAB, DAT or DCC is transmitted by using the SPDIF consumer 
+standard, derived from the AES/EBU professional standard. Using this 
+standard, every sample is transmitted as a 32-bit word (called a 
+subframe). Two subframes make one frame (64 bits total), which repeats 
+at the sampling rate in use. A block contains 192 frames. At 48 kHz the 
+bit rate will be 3.072 MHz, at 44.1 kHz the bit rate will be 2.8224 MHz.
+ The first subframe will contain the sample from channel A, the second 
+frame will contain the sample from channel B.</p>
+<p class="Body">
+<a name="pgfId-998352"></a>The basic SPDIF and AES/EBU subframe structure can be found in the following figure:</p>
+<div>
+<p align="center">
+<img src="Digital%20Communication_files/digcom-3.gif">
+</p>
+</div>
+<h5 class="FigureTitle" align="center">
+Figure 2: SPDIF subframe structure</h5>
+<p class="Body">
+</p><p class="Body">
+<a name="pgfId-998359"></a>The first 4 bits in the preamble are used for
+ synchronization. There are 3 different sync-patterns (called B, M, W), 
+but they can appear in different forms, depending on the value of the 
+last cell of the previous subframe (see the section about channel 
+encoding/decoding for more information). Preamble B marks a word 
+containing data for channel A (left) at the start of a block. Preamble M
+ marks a word with data for channel A that isn't at the start of a 
+block. Preamble W marks a word containing data for channel B (right, for
+ stereo). </p>
+<div>
+<p align="center">
+<img src="Digital%20Communication_files/digcom-4.gif">
+</p>
+</div>
+<h5 class="FigureTitle" align="center">
+Figure 3: Block structure</h5>
+<p class="Body">
+</p><p class="Body">
+<a name="pgfId-998366"></a>There is room for 24 audio bits (4-27) in a 
+subframe, but normally 20 audio bits are available (8-27). In case of CD
+ only 16 bits are used. Bits that are not used, are defined to be zero 
+in SPDIF (in contrary to for instance I2S, where the LSB is repeated, 
+resulting in less transitions in a serial interface, and hence less 
+power dissipation). As audio data must be in 2-complements code, and 
+different word lengths may be used, the MSB must always be at the same 
+place. SPDIF sends the MSB first. </p>
+<p class="Body">
+<a name="pgfId-998367"></a>Four status bits (28-31) accompany each 
+subframe. Bit 28 (V) is the validity flag, which indicates whether the 
+data received is suitable for conversion to an analog signal (e.g. to 
+indicate non-audio data, like CD-I or CD-ROM players, which can be used 
+for muting the audio outputs). Bit 31, the parity bit (P), produces even
+ parity (total number of ones is even), which is meant for error 
+correction at the destination. The user bit (bit 29, U) and channel bits
+ (bit 20, C) are collected to form user and channel status blocks. </p>
+<p class="Body">
+<a name="pgfId-998368"></a>The sequence of channel bits over 192 
+subframes (or one block) builds up a 24 byte (192 bit) channel status 
+block. The preamble is used to denote the start of a channel status 
+block (see the section about channel encoding/decoding for more 
+information). The structure of a channel status block is shown in the 
+following figure. </p>
+<div>
+<p align="center">
+<img src="Digital%20Communication_files/digcom-5.gif">
+</p>
+</div>
+<h5 class="FigureTitle" align="center">
+Figure 4: Channel status block structure</h5>
+<p class="Body">
+<a name="pgfId-998375"></a>First, the serial data is assembled into 12 
+words of 16 bits each. The first 6 bits of the first word form a control
+ word. The following 2 bits permit a mode select for future expansion. 
+Currently only mode 0 is standardized (and the corresponding bit 
+allocation shown in the figure). </p>
+<ul>
+<p class="Indented">
+<a name="pgfId-998376"></a>Control word:		bit 0	0 = consumer, 1 = professional</p>
+<p class="Indented">
+<a name="pgfId-998377"></a>		bit 1	0 = normal, 1 = digital data</p>
+<p class="Indented">
+<a name="pgfId-998378"></a>		bit 2	0 = copy prohibit, 1 = copy permit</p>
+<p class="Indented">
+<a name="pgfId-998379"></a>		bit 3	0 = no pre-emphasis, 1 = pre-emphasis</p>
+<p class="Indented">
+<a name="pgfId-998380"></a>		bit 4	reserved</p>
+<p class="Indented">
+<a name="pgfId-998381"></a>		bit 5	0 = 2CH, 1 = 4CH</p>
+<p class="Indented">
+<a name="pgfId-998382"></a>&nbsp;</p>
+<p class="Indented">
+<a name="pgfId-998383"></a>Mode:		bit 6,7	00 = mode 0 (01 10 11 = reserved)</p>
+<p class="Indented">
+<a name="pgfId-998384"></a>&nbsp;</p>
+<p class="Indented">
+<a name="pgfId-998385"></a>	Category code:	bit 8, 15	00000000 = general format</p>
+<p class="Indented">
+<a name="pgfId-998386"></a>			10000000 = CD player</p>
+<p class="Indented">
+<a name="pgfId-998387"></a>			11000000 = DAT player</p>
+<p class="Indented">
+<a name="pgfId-998388"></a>		bit 15	0 = original recording</p>
+<p class="Indented">
+<a name="pgfId-998389"></a>			1 = first-generation copy (SCMS)</p>
+<p class="Indented">
+<a name="pgfId-998390"></a>&nbsp;</p>
+<p class="Indented">
+<a name="pgfId-998391"></a>Source no.:		bit 16 - 19	0000 = don't care</p>
+<p class="Indented">
+<a name="pgfId-998392"></a>			0001 = source 1</p>
+<p class="Indented">
+<a name="pgfId-998393"></a>			0010 = source 2</p>
+<p class="Indented">
+<a name="pgfId-998394"></a>			...</p>
+<p class="Indented">
+<a name="pgfId-998395"></a>&nbsp;</p>
+<p class="Indented">
+<a name="pgfId-998396"></a>Channel no.:		bit 20 - 23	0000 = don't care</p>
+<p class="Indented">
+<a name="pgfId-998397"></a>			1000 = A (left channel for stereo)</p>
+<p class="Indented">
+<a name="pgfId-998398"></a>			0100 = B (right channel for stereo)</p>
+<p class="Indented">
+<a name="pgfId-998399"></a>			1100 = C</p>
+<p class="Indented">
+<a name="pgfId-998400"></a>			...</p>
+<p class="Indented">
+<a name="pgfId-998401"></a>&nbsp;</p>
+<p class="Indented">
+<a name="pgfId-998402"></a>Sampling rate:		bit 24 - 27	0000 = 44.1 kHz</p>
+<p class="Indented">
+<a name="pgfId-998403"></a>			0100 = 48 kHz</p>
+<p class="Indented">
+<a name="pgfId-998404"></a>			1100 = 32 kHz</p>
+<p class="Indented">
+<a name="pgfId-998405"></a>			remaining codes reserved</p>
+<p class="Indented">
+<a name="pgfId-998406"></a>&nbsp;</p>
+<p class="Indented">
+<a name="pgfId-998407"></a>Clock accuracy:		bit 28, 29	00 = normal accuracy</p>
+<p class="Indented">
+<a name="pgfId-998408"></a>			10 = high accuracy</p>
+<p class="Indented">
+<a name="pgfId-998409"></a>			01 = variable speed<br>
+</p>
+</ul>
+<p class="Body">
+<a name="pgfId-998410"></a>In case of a CD player (category code 
+10000000), the audio sample words in the subframe structure consists of 
+16 bit words, MSB in position 8, bits 24 - 27 in the channel status 
+block are 0000, indicating a 44.1 kHz sampling frequency, and bits 28,29
+ are set according to the source accuracy. The two channel format 
+(00000000) leaves room for a maximum of 20 bits/sample, and various 
+sample frequencies. </p>
+<p class="Body">
+<a name="pgfId-998411"></a>W.r.t. possible sample rates and pre-emphasis
+ the following observations can be made. CD uses 44.1kHz, with the 
+possibility of 50/15 <em class="Symbol">
+&#956;</em>
+s pre-emphasis. DAB uses 48 kHz, without pre-emphasis. DCC and DAT support 32, 44.1, 48 kHz with the possibility for 50/15 <em class="Symbol">
+&#956;</em>
+s pre-emphasis. ISO/MPEG supports 6 sampling rates (16, 22.05, 24, 32, 
+44.1, 48 kHz) with 2 possible pre-emphasis-types (not simultaneously): 
+50/15 <em class="Symbol">
+&#956;</em>
+s and the so-called CCITT J.17. CD-i only uses 44.1 kHz (also for Full-Motion Video with MPEG), with the possibility for 50/15 <em class="Symbol">
+&#956;</em>
+s pre-emphasis. The whole 50/15 <em class="Symbol">
+&#956;</em>
+s pre-emphasis matter is a gift from Sony, who in the early digital 
+period weren't capable of building reasonable DA-convertors. The CCIT 
+standard originates from the telecommunication environment. </p>
+<p class="Body">
+<a name="pgfId-998412"></a>The user code bits can be used by the 
+manufacturer at will. They are used in blocks of 1176 bits before which a
+ sync-word of 16 "0"-bits is transmitted. </p>
+</div>
+<div>
+<h2 class="Heading1">
+<a name="pgfId-998413"></a>Channel encoding/decoding</h2>
+<p class="Body">
+<a name="pgfId-998414"></a>Transmitting a digital signal by simply 
+serializing the data is not a good strategy, since it is difficult to 
+estimate the data rate of the source at the destination, and hence it is
+ difficult to separate the received bits and to recover an accurate 
+jitter-free clock. </p>
+<p class="Body">
+<a name="pgfId-998415"></a>PDIF interfaces use FM channel coding (also 
+known as Manchester coding or bi-phase mark coding), which is DC free, 
+strongly self-clocking and capable of working with a changing sampling 
+rate. The use of FM means that the channel frequency is the same as the 
+bit rate when sending data ones, because FM takes care that a state 
+transition takes place at each bit. A logical 1 is represented by a 
+second transition. Hence the clock signal can be recovered, independent 
+of the data. </p>
+<h5 class="TableTitle">
+<a name="pgfId-998418"></a>Table 4: Biphase mark coding examples</h5><table border="1">
+
+<tbody><tr>
+<th rowspan="1" colspan="1">
+<p class="CellHeading">
+<a name="pgfId-998422"></a>data</p>
+</th>
+<th rowspan="1" colspan="1">
+<p class="CellHeading">
+<a name="pgfId-998424"></a>Biphase mark equivalent</p>
+</th>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998426"></a>0000</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998428"></a>00110011</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998430"></a>0111</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998432"></a>00101010</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998434"></a>0101</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998436"></a>00101101</p>
+</td>
+</tr>
+</tbody></table>
+<p class="Body">
+<a name="pgfId-998437"></a>The sync-pattern deliberately violates the 
+Manchester coding, so that the beginning of a block is easy to detect. 
+The bit patterns in the preamble always contain more than two 0's or 1's
+ in a row. </p>
+<h5 class="TableTitle">
+<a name="pgfId-998440"></a>Table 5: Preamble contents</h5><table border="1">
+
+<tbody><tr>
+<th rowspan="1" colspan="1">
+<p class="CellHeading">
+<a name="pgfId-998446"></a>Sync pattern</p>
+</th>
+<th rowspan="1" colspan="1">
+<p class="CellHeading">
+<a name="pgfId-998448"></a>Contents</p>
+<p class="CellHeading">
+<a name="pgfId-998449"></a>(bit 31="0")</p>
+</th>
+<th rowspan="1" colspan="1">
+<p class="CellHeading">
+<a name="pgfId-998451"></a>Contents</p>
+<p class="CellHeading">
+<a name="pgfId-998452"></a>(bit 31="1")</p>
+</th>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998454"></a>B</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998456"></a>11101000</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998458"></a>00010111</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998460"></a>M</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998462"></a>11100010</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998464"></a>00011101</p>
+</td>
+</tr>
+<tr>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998466"></a>W</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998468"></a>11100100</p>
+</td>
+<td rowspan="1" colspan="1">
+<p class="CellBody">
+<a name="pgfId-998470"></a>00011011</p>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div>
+<h2 class="Heading1">
+<a name="pgfId-998471"></a>Modulation/demodulation</h2>
+<p class="Body">
+<a name="pgfId-998474"></a>The electrical interface of the consumer format as specified by IEC 958 is shown in the following figure. </p>
+<div>
+<p align="center">
+<img src="Digital%20Communication_files/digcom-6.gif">
+</p>
+</div>
+<h5 class="FigureTitle" align="center">
+Figure 5: Electrical SPDIF interface</h5>
+<p class="Body">
+<a name="pgfId-998575"></a>It uses a 0.5 Vtt signal, and a frequency of almost 6 MHz<a href="#pgfId-998574" class="footnote"><sup>1</sup></a>, which can be conveyed down conventional audio-grade coaxial cable connected with RCA phono plugs.</p>
+<p class="Body">
+<a name="pgfId-998576"></a>A slicer can be used to convert the analog 
+waveform to a binary output. The signal voltage is compared to a 
+particular voltage, called the threshold, and if the signal voltage is 
+above the threshold the comparator outputs a high level, and a low level
+ otherwise. If the waveform would contain a DC component, the average 
+level of the waveform would raise, and hence this would seriously affect
+ the slicing process. Hence it is clearly not possible to serialize 
+arbitrary data in a shift-register for direct transmission. The 
+manchester coding process takes care that on average the number of 0's 
+is equal to the number of 1's, making slicing possible. </p>
+</div>
+<div>
+<h2 class="Heading1">
+<a name="pgfId-998577"></a>Communication channel</h2>
+<p class="Body">
+<a name="pgfId-998578"></a>The communication channel consists of a 
+coax-cable, connecting the source and destination. The waveform 
+transmitted through the cable is affected by noise, baseline wander, 
+intersymbol inerference and imperfect equalization, resulting in time 
+uncertainties in the position of the edges, resulting in jitter when a 
+slicer is used to recover the clock. An eye-pattern can be used to 
+observe the characteristics of the communication channel. In Figure 6 it
+ is shown how particular waveforms (left hand side) are typically 
+displayed using an oscilloscope (right hand side) triggering on such a 
+waveform. </p>
+<p class="Body">
+<a name="pgfId-998589"></a>&nbsp;</p>
+<div>
+<p align="center">
+<img src="Digital%20Communication_files/digcom-7.gif">
+</p>
+</div>
+<h5 class="FigureTitle" align="center">
+Figure 6: Eye diagrams (unlimited bandwidth ideal, limited bandwidth ideal, distorted)</h5>
+<p class="Body">
+<a name="pgfId-998590"></a>&nbsp;</p>
+<p class="Body">
+<a name="pgfId-998594"></a>In Figure 7 the typical characteristics 
+derived from such an eye-pattern are shown. Noise closes the eye in a 
+vertical direction, whereas jitter closes the eye in a horizontal 
+direction. </p>
+<div>
+<p align="center">
+<img src="Digital%20Communication_files/digcom-8.gif">
+</p>
+</div>
+<h5 class="FigureTitle" align="center">
+Figure 7: Eye diagram characteristics</h5>
+<p class="Body">
+<a name="pgfId-998602"></a>In [Watk94] the following minimum eye pattern
+ (see [Shan85]) acceptable for correct decoding of data for a 
+biphase-marked data stream in the AES/EBU standard is given (see Figure 
+8). In this figure Tnom denotes the half of a biphase symbol period, and
+ Tmin = 0.5 * Tnom . Because in the biphase-marked digital data stream a
+ data bit is represented by two transitions, the jitter margin can only 
+be a half bit (in the absence of noise) to be able to reconstruct the 
+data, which is about 80ns. The minimum height of the eye should be 
+200mV. </p>
+<p class="Body">
+<a name="pgfId-998606"></a>As error correcting methods are incorporated 
+inside the SPDIF interface, data errors because of data corruption can 
+be detected very easily. In normal conditions, data corruption caused by
+ jitter or noise is hardly an issue.</p>
+<div>
+<p align="center">
+<img src="Digital%20Communication_files/digcom-9.gif">
+</p>
+</div>
+<h5 class="FigureTitle" align="center">
+Figure 8: SPDIF eye pattern</h5>
+<div>
+<h3 class="Heading2">
+<a name="pgfId-998614"></a>Cable impedance</h3>
+<p class="Body">
+<a name="pgfId-998615"></a>The coax-cable has a so called impedance,which will be explained in the remainder of this section. </p>
+<p class="Body">
+<a name="pgfId-998616"></a>Transmission can be modelled as 
+electromagnetic energy travelling from one place to another. Depending 
+on the frequency of the of the electromagnetic energy, different 
+characteristics can be observed when it is tranported by conductors. </p>
+<p class="Body">
+<a name="pgfId-998627"></a>An electric model of a conductor can be found in Figure 9. </p>
+<div>
+<p align="center">
+<img src="Digital%20Communication_files/digcom-10.gif">
+</p>
+</div>
+<h5 class="FigureTitle" align="center">
+Figure 9: Electrical model of coax cable</h5>
+<p class="Body">
+<a name="pgfId-998628"></a>In a nutshell the cable capacitance <em class="EquationVariables">
+C</em>
+ results from the fact that there exists an electric field between the 
+two conductors given a potential difference between them, determined by 
+the geometry of the space between the conductors and the nature of the 
+dielectric. The cable inductance <em class="EquationVariables">
+L</em>
+ results from the fact that any current-carrying conductor produces a 
+magnetic field. A cable (with the exception of superconductors) always 
+has a certain amount of resistance <em class="EquationVariables">
+R</em>
+. And finally, the insultor will cause signal losses modelled by <em class="EquationVariables">
+G</em>
+. </p>
+<p class="Body">
+<a name="pgfId-998632"></a>For an infinite length of the network model we find:</p>
+<ul>
+<p class="Indented">
+<a name="pgfId-998636"></a></p>
+<img src="Digital%20Communication_files/digcom-11.gif" align="BOTTOM">
+&nbsp;</ul>
+<p class="Body">
+<a name="pgfId-998637"></a>The equation does not depend on the length, 
+because these quantities are distributed. No matter how short the length
+ of the cable is, it still can be modelled as above. The cable impedance
+ is only a concern when the cable is a fraction of the wavelength of the
+ signal in question.</p>
+<p class="Body">
+<a name="pgfId-998638"></a>At low frequencies electromagnetic energy is 
+called electricity. Electricity is transported completely inside 
+conductors. At DC an inductor acts as a short circuit, and a capacitance
+ acts as an open circuit. The resistance is determined by the 
+cross-sectional area of the conductor. The insulation has no effect on 
+the ability of the conductor to pass current. </p>
+<p class="Body">
+<a name="pgfId-998639"></a>As frequency rises, inductors display an 
+increasing impedance with frequency and capacitors show falling 
+impedance. Electromagnetic energy becomes increasingly desperate to 
+leave the conductor. This results in the skin-effect, where current only
+ flows in outside layer of the inductor, causing the resistance to rise.
+ As the energy is starting to leave the conductor, the geometry of the 
+space between them is becoming more important. This determines the 
+impedance. A change of impedance causes reflections in the energy flow, 
+hence constant impedance cables with fixed inductor spacing are 
+necessary. As frequency rises even further, the energy travels less in 
+the conductors and more in the insulation between them. The composition 
+in the insulators is becoming more important, and they begin to be 
+called dielectrics. Poor dielectrics like PVC absorb high-frequency 
+energy, and attenuate the signal. </p>
+<p class="Body">
+<a name="pgfId-998640"></a>As the transition rate is within an average 
+of a few megabytes per second, and only moderate cable lengths will be 
+used in practice (hence <em class="EquationVariables">
+R</em>
+ and <em class="EquationVariables">
+G</em>
+ can be ignored to a certain extent), the main losses of the cable will be determined by <em class="EquationVariables">
+L</em>
+ and <em class="EquationVariables">
+C</em>
+:</p>
+<ul>
+<p class="Indented">
+<a name="pgfId-998644"></a></p>
+<img src="Digital%20Communication_files/digcom-12.gif" align="BOTTOM">
+&nbsp;</ul>
+<p class="Body">
+<a name="pgfId-998645"></a>Notice that the frequency dependency is gone.
+ Also notice that the result does not depend on the cable length (when 
+ignoring cable losses), because the quantities are distributed along the
+ cable (you can't isolate the C-part or L-part from a cable). Also 
+notice that the bandwidth of the signal should be narrow, and the 
+transition of a sequence of many identical bits should therefore be 
+avoided by modifying the spectrum of the signal by application of a 
+suitable channel encoding. </p>
+<p class="Body">
+<a name="pgfId-998646"></a>So, if the cable length is a fair fraction of
+ the wavelength of the signal in question, the cable can be considered 
+as a transmission line, and pulses travel down it as current loops. If a
+ positive pulse is launched across the line, it will charge the 
+dielectric in the direction from the driver to the receiver, resulting 
+in a leading edge. When the driver ends the pulse, the dielectric will 
+discharge leading to a falling edge, which bears the same current as the
+ leading edge. There is thus a loop of current rolling along the line as
+ if it were a Caterpillar tractor. </p>
+<p class="Body">
+<a name="pgfId-998647"></a>Transmission lines which transport energy in 
+this way have a characteristic impedance because of the interplay of 
+inductance along the conductors with the capacitance. One consequence is
+ that a correct termination or matching is required between the line and
+ both the driver and the receiver to make the rolling energy roll 
+straight out of the line into the load. If the impedance is mismatched, 
+reflections will result.</p>
+<p class="Body">
+<a name="pgfId-998197"></a>The main concern with digital cables is of 
+the junction that forms at the major connection. If the connectors are 
+not clean or the cables are not connected in a right manner, a diode 
+effect can be observed, resulting in a slow rise time and a fast fall 
+time. </p>
+</div>
+</div>
+</div>
+<hr>
+<div class="footnotes">
+<div class="footnote">
+<p class="Footnote">
+<span class="footnoteNumber">
+1.</span>
+<a name="pgfId-998574"></a>More exactly, one frame contains 64 bits 
+which are sent during one clock period. This results in a bit-rate of 
+2.8224Mbit/s (44.1kHz), 3.072 Mbit/s (48kHz), or 2.048Mbit/s (32kHz), 
+which after bi-phase mark coding is doubled. </p>
+</div>
+</div>
+
+<br><br><p align="center"><font face="Arial, helvetica" size="-3">Copyright © 2001, Marc Heijligers and the DAC group - All rights reserved.</font></p><font face="Arial, helvetica" size="-3">
+</font>
+
+
+
+
+</body></html>
