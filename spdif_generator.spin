@@ -1,3 +1,7 @@
+' MINIMUM VALUE OF (CLKFREQ/SAMPLE_RATE) THAT WORKS IS ~655
+' ADJACENT PINS ARE COMPLEMENTARY
+' ARBITRARY MASK FOR MULTIPLE PINS
+
 VAR
   long mycog
 
@@ -22,8 +26,6 @@ CON
   preamble_Z_xor  =  preamble_Z ^ $33 ' %00100100
   preamble_Y_xor  =  preamble_Y ^ $33 ' %00010100
   preamble_X_xor  =  preamble_X ^ $33 ' %01110100
-
-  one_billion = 1<<30
 
 DAT
         org 0
@@ -165,9 +167,8 @@ bmc_encode_word_ret     ret
         mask_bit15 long $00008000
         mask_bit31 long $80000000
         mask_ones long $FFFFFFFF
-        mask_sample long $0FFFFFF0
          
-        palette long $55_AA
+        palette long $55_AA ' This ensures that adjacent pins in the group will be inverse to each other for differential signalling or power stabilisation
         
         pos long 0
 
@@ -233,22 +234,9 @@ bmc_encode_word_ret     ret
         inptr res 1
         posptr res 1
 
-        fit 496
+        fit
 
 PUB start(sample_rate,lg_div,buffer_in,posptr_out,vgroup,vpins)
-  dira[23]:=1
-  dira[22]:=1 
-  dira[21]:=1 
-   
-  if calc_frq(sample_rate)==fixed_frq(sample_rate)
-    outa[23]:=1
-
-  if clkfreq==80000000
-    outa[22]:=1
-
-  if clkfreq==40000000
-    outa[21]:=1
-
   ' Initialising the position pointer here guarantees that it will be initialised to a sane value (i.e. 0) by the time
   ' this function returns - if we initialised it inside the worker cog, there's a slim possibility that the caller
   ' could read it before that point 
@@ -270,40 +258,31 @@ PUB stop
 ' /////////////////////////////////
 
 PRI divround(x,y)
-  return (x + (y/2))/y
-
-PRI fixed_frq(sample_rate)
-case sample_rate
-  16000:  return  109951163 '  16   kHz                 
-  32000:  return  219902326 '  32   kHz
-  44100:  return  303052892 '  44.1 kHz
-  48000:  return  329853488 '  48   kHz
-  96000:  return  659706977 '  96   kHz
-  192000: return 1319413953 ' 192   kHz
+  return (x + y>>1)/y
 
 PRI calc_frq(sample_rate) | cf_up,divisor,quotient,remainder
   ' This calculates ((2^32)/CLKFREQ)*rate_hz in 32-bit signed arithmetic using involved overflow-dodging tricks
 
   divisor := CLKFREQ/400
 
-  quotient := $40000000/divisor                         ' 10,737                41,824           
-  remainder := $40000000//divisor                       ' possible 20000
+  quotient := $40000000/divisor     
+  remainder := $40000000//divisor
 
-  ' Remaining coefficient: 128*sample_rate*(4/4000)
+  ' Remaining coefficient: 128*sample_rate*(4/400)
 
-  quotient *= sample_rate/100                           ' 3,435,840             13,383,680
-  remainder *= sample_rate/100                          ' possible 38,400,000
+  quotient *= sample_rate/100
+  remainder *= sample_rate/100
 
-  quotient += remainder/divisor                         ' 3,435,973             83,680         
-  remainder//=divisor                                   ' possible 20,000
+  quotient += remainder/divisor
+  remainder//=divisor
 
   ' Remaining coefficient: 128*100*(4/400) = 128
 
-  quotient<<=7                                          ' 439,804,544           10,711,040               
-  remainder<<=7                                         ' possible 15,360,000
+  quotient<<=7       
+  remainder<<=7
 
   ' Process the remainder to give the integer FRQA value nearest to the correct one
-  return quotient + (remainder + divisor/2)/divisor     ' 439804651
+  return quotient + divround(remainder,divisor)
 
 PRI calc_ctr(mode,plldiv,apin,bpin)
   return ((mode << 3 + plldiv) << 14 + bpin) << 9 + apin

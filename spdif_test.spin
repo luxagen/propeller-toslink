@@ -2,11 +2,10 @@ VAR
   long buffer[384]
   long subcodes[12]
 CON
-  ' MINIMUM VALUE OF (CLKFREQ/SAMPLE_RATE) THAT WORKS IS ~655
   _clkmode = xtal1+pll16x
   _xinfreq=5000000
 
-  SPD_SR = 44100                ' Sample rate
+  SPD_SR = 96000               ' Sample rate
   SPD_VGROUP=0
   SPD_VPINS=%00000010
 
@@ -41,16 +40,15 @@ PUB Main | count,sample,samples_read,wpos
   buffer[382] := mksmp16(+500)
   buffer[383] := mksmp16(-500)
           
-'  samples_read:=192
-  samples_read:=0
+  spdif.start(SPD_SR,LG_DIVIDER,@buffer,@samples_read,SPD_VGROUP,SPD_VPINS)
   gen.start(SPD_SR,@buffer,192,@samples_read,@subcodes)
 
-  spdif.start(SPD_SR,LG_DIVIDER,@buffer,@samples_read,SPD_VGROUP,SPD_VPINS)
-
+  ' Minimally busy wait
   repeat
-  repeat
+    waitcnt(clkfreq+cnt)
 
   spdif.stop
+  gen.stop
 
 PUB mksmp16(value)
   return (value<<12)&$0FFFFFF0

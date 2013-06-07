@@ -1,3 +1,9 @@
+' This generates a 1kHz half-full-scale sawtooth regardless of sample-rate
+
+CON
+  SAW_FREQ=1000 ' Number of sawtooth cycles per second
+  SAW_BITS=20   ' The sawtooth will appear in the lowest SAW_BITS bits of the 24-bit sample, higher bits being sign-extended
+
 VAR
   long mycog
 
@@ -83,7 +89,7 @@ gen_smp_group
         if_e mov sample,#0 ' First non-lead-in sample is zero...
         if_a add sample,increment ' ...and they increment from there
         mov temp2,sample
-        sar temp2,#5
+        sar temp2,#(28-SAW_BITS)
 
         and temp2,mask_sample ' Clear special bits (the preamble will be left blank by the shift above)
 
@@ -106,13 +112,6 @@ gen_smp_group
          
         add frames_written,#1 ' Inform the consumer that it has a new stereo sample
 
-        ' Show a visible indication         
-'        mov temp,value_leds
-'        and temp,mask_leds
-'        andn outa,mask_leds
-'        or outa,temp
-'        rol value_leds,#1
-         
         djnz counter,#gen_smp_group
 gen_smp_group_ret ret
                
@@ -152,7 +151,6 @@ copy_subcodes_ret ret
 
         sample long -16384
 
-'        mask_iucp long $F0000000
         mask_sample long $0FFFFFF0
         mask_u long $20000000
         mask_c long $40000000
@@ -179,14 +177,37 @@ copy_subcodes_ret ret
 
         fit
 
+PUB calc_step(freq,sample_rate) | quotient,remainder
+  freq<<=16
+
+  quotient := freq/sample_rate
+  remainder := freq//sample_rate
+
+  quotient<<=8
+  remainder<<=8
+
+  quotient += remainder/sample_rate
+  remainder//=sample_rate
+
+  quotient<<=8
+  remainder<<=8
+
+  return quotient + divround(remainder,sample_rate)
+
 PUB start(__sample_rate,__buffer,__buffer_frames,__readsmp_ptr,__subcodes_ptr)
   _buffer:=__buffer
   _buffer_frames:=__buffer_frames
   _readsmp_ptr:=__readsmp_ptr
   _subcodes_ptr:=__subcodes_ptr
-  _step := ((32768*1000 + __sample_rate/2)/__sample_rate)<<17
+
+  
+'  _step := (((SAW_FREQ<<16) + __sample_rate/2)/__sample_rate)<<16
+  _step:=calc_step(SAW_FREQ,__sample_rate)
 
   mycog:=cognew(@_gencog,@_buffer)
 
 PUB stop
   cogstop(mycog)
+
+PRI divround(x,y)
+  return (x + y>>1)/y
