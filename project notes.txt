@@ -2,9 +2,23 @@
 - then found that 60 ohms wasn't enough - brownout protection would kill it after half a second because of excessive draw
 - tried 90 ohms and that was stable with confirmed signalling on pin 15
 - finally settled on a dual-fed LED with 16 kohm resistance to Vdd (to hold it active for faster switching) and 250 ohm resistance to signalling pin - this worked well (i.e. with air spacing between LED and fibre) with a 5m fibre
+- used a simpler single-fed design for the vpin assessment board to save resistors, and proved that all pins of a vgroup are usable by the S/PDIF driver
 
 EXTERNAL INTERFACE
 - one phono for S/PDIF
 - one TOSLINK socket
-- one rocker/throw switch to select 32 kHz or 96 kHz
 - one pushbutton for resetting the chip to account for a sample-rate change
+- plug/socket pair with at least 8 conductors
+- level shifter for MPXA,MPXB,INH,SCLK,LAEN?,SDATA
+- opto-isolator for USB data lines?
+
+plan
+
+1. Attach power/data wires inside D-70 (with transmission resistors for signals) and attach to new board (connector?)
+2. tap GND line and isolate +5V line to mini-USB lead
+3. install USB B socket and temporarily connect data lines directly to mini-USB lead
+4. power up D-70 and verify Propeller power
+5. connect laptop to USB and verify USB interface
+6. install 5V opto-isolator(s) and verify USB interface again
+7. install level-shifter chip to connect D70 data lines to Propeller
+8. work on signal-reading code
