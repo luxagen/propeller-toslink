@@ -6,7 +6,7 @@ CON
   _xinfreq=5000000
 
   SPD_SR = 96000               ' Sample rate
-  SPD_VGROUP=0
+  SPD_VGROUP=2
   SPD_VPINS=%00000010
 
   DEBUGGING=false

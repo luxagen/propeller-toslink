@@ -11,13 +11,42 @@ VAR
   long _buffer
   long _buffer_frames
   long _readsmp_ptr
-  long _subcodes_ptr
   long _step
+  long _subcodes_ptr
 
 DAT
-        org 0
+
+org 0
+
+copy_subcodes
+        rdlong buf_ctrl+0,temp
+        add temp,#4
+        rdlong buf_ctrl+1,temp        
+        add temp,#4
+        rdlong buf_ctrl+2,temp        
+        add temp,#4
+        rdlong buf_ctrl+3,temp        
+        add temp,#4
+        rdlong buf_ctrl+4,temp        
+        add temp,#4
+        rdlong buf_ctrl+5,temp
+        add temp,#4        
+        rdlong buf_user+0,temp
+        add temp,#4
+        rdlong buf_user+1,temp        
+        add temp,#4
+        rdlong buf_user+2,temp        
+        add temp,#4
+        rdlong buf_user+3,temp        
+        add temp,#4
+        rdlong buf_user+4,temp        
+        add temp,#4
+        rdlong buf_user+5,temp
+        add temp,#4        
+copy_subcodes_ret ret
+
 _gencog
-        ' load parameters into local registers 
+        ' Load parameters into local registers 
 
         ' Get pointer to buffer
         mov temp,par
@@ -30,14 +59,14 @@ _gencog
         add temp,#4
         rdlong readsmp_ptr,temp
 
+        ' Get per-sample increment value
+        add temp,#4
+        rdlong increment,temp
+
         ' Copy client-supplied subcode table into cog-local memory for speed 
         add temp,#4
         rdlong temp,temp
         call #copy_subcodes
-
-        mov temp,par
-        add temp,#16
-        rdlong increment,temp
 
         andn outa,mask_leds
         or dira,mask_leds
@@ -88,25 +117,25 @@ gen_smp_group
 
         if_e mov sample,#0 ' First non-lead-in sample is zero...
         if_a add sample,increment ' ...and they increment from there
-        mov temp2,sample
-        sar temp2,#(28-SAW_BITS)
+        mov spdif_sample,sample
+        sar spdif_sample,#(28-SAW_BITS)
 
-        and temp2,mask_sample ' Clear special bits (the preamble will be left blank by the shift above)
+        and spdif_sample,mask_sample ' Clear special bits (the preamble will be left blank by the shift above)
 
         ' Set user and control bits from subcode table
         rcr reg_user,#1 wc
-        if_c or temp2,mask_u
+        if_c or spdif_sample,mask_u
         rcr reg_ctrl,#1 wc
-        if_c or temp2,mask_c wc ' Save overall parity...
+        if_c or spdif_sample,mask_c wc ' Save overall parity...
         ' ...and encode it too
-        if_c or temp2,mask_p
+        if_c or spdif_sample,mask_p
 
         ' Write the sample to the destination buffer twice for stereo
         mov temp,writebyte
         add temp,buffer
-        wrlong temp2,temp
+        wrlong spdif_sample,temp
         add temp,#4
-        wrlong temp2,temp
+        wrlong spdif_sample,temp
         add writebyte,#8
         cmpsub writebyte,buffer_bytes
          
@@ -115,68 +144,44 @@ gen_smp_group
         djnz counter,#gen_smp_group
 gen_smp_group_ret ret
                
-copy_subcodes
-        rdlong buf_ctrl+0,temp
-        add temp,#4
-        rdlong buf_ctrl+1,temp        
-        add temp,#4
-        rdlong buf_ctrl+2,temp        
-        add temp,#4
-        rdlong buf_ctrl+3,temp        
-        add temp,#4
-        rdlong buf_ctrl+4,temp        
-        add temp,#4
-        rdlong buf_ctrl+5,temp
-        add temp,#4        
-        rdlong buf_ctrl+0,temp
-        add temp,#4
-        rdlong buf_ctrl+1,temp        
-        add temp,#4
-        rdlong buf_ctrl+2,temp        
-        add temp,#4
-        rdlong buf_ctrl+3,temp        
-        add temp,#4
-        rdlong buf_ctrl+4,temp        
-        add temp,#4
-        rdlong buf_ctrl+5,temp        
-copy_subcodes_ret ret
-
-        leadin_frames long 88200
-
-        mask_leds long $00FF0000
-        value_leds long $01010101
-
-        frames_written long 0
-        writebyte long 0
-
-        sample long -16384
-
-        mask_sample long $0FFFFFF0
-        mask_u long $20000000
-        mask_c long $40000000
-        mask_p long $80000000
-
-        buffer res 1
-        buffer_bytes res 1
-        readsmp_ptr res 1
-
-        temp res 1
-        temp2 res 1
-        frames_read res 1
-
-        ' Local buffer for subcodes
-        subcodes_buf
-        buf_ctrl res 6
-        buf_user res 6
-
-        ' Counter and registers for shifting out one bit of each subcode per sample 
-        counter res 1
-        reg_ctrl res 1
-        reg_user res 1
-        increment res 1
-
-        fit
-
+leadin_frames long 88200
+ 
+mask_leds long $00FF0000
+value_leds long $01010101
+ 
+frames_written long 0
+writebyte long 0
+ 
+sample long -16384
+ 
+mask_sample long $0FFFFFF0
+mask_u long $20000000
+mask_c long $40000000
+mask_p long $80000000
+ 
+' ======== PARAMETERS ========
+ 
+buffer res 1
+buffer_bytes res 1
+readsmp_ptr res 1
+increment res 1
+ 
+' Local buffer for subcodes
+subcodes_buf
+buf_ctrl res 6
+buf_user res 6
+ 
+' ============================
+ 
+' Working space         
+counter res 1           ' Controls 32-frame loop for outputting 1/6th of a block
+reg_ctrl res 1          ' Shift register for current control-subcode word
+reg_user res 1          ' Shift register for current user-subcode word
+temp res 1              ' General-purpose temporary
+spdif_sample res 1      ' Temporary for formatting S/PDIF data
+ 
+fit
+ 
 PUB calc_step(freq,sample_rate) | quotient,remainder
   freq<<=16
 
@@ -195,19 +200,19 @@ PUB calc_step(freq,sample_rate) | quotient,remainder
   return quotient + divround(remainder,sample_rate)
 
 PUB start(__sample_rate,__buffer,__buffer_frames,__readsmp_ptr,__subcodes_ptr)
+  stop
+
   _buffer:=__buffer
   _buffer_frames:=__buffer_frames
   _readsmp_ptr:=__readsmp_ptr
+  _step:=calc_step(SAW_FREQ,__sample_rate)
   _subcodes_ptr:=__subcodes_ptr
 
-  
-'  _step := (((SAW_FREQ<<16) + __sample_rate/2)/__sample_rate)<<16
-  _step:=calc_step(SAW_FREQ,__sample_rate)
-
-  mycog:=cognew(@_gencog,@_buffer)
+  mycog := 1+cognew(@_gencog,@_buffer)
 
 PUB stop
-  cogstop(mycog)
+  if mycog
+    cogstop(mycog~ - 1)
 
 PRI divround(x,y)
   return (x + y>>1)/y
