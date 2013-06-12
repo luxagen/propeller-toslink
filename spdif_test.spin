@@ -6,8 +6,8 @@ CON
   _xinfreq=5000000
 
   SPD_SR = 96000               ' Sample rate
-  SPD_VGROUP=2
-  SPD_VPINS=%00000010
+  SPD_VGROUP=1
+  SPD_VPINS=%10000000
 
   DEBUGGING=false
   LG_DIVIDER = (DEBUGGING&1)<<7
@@ -29,6 +29,11 @@ OBJ
 
 PUB Main | count,sample,samples_read,wpos
 
+'  outa[15] := 1
+'  dira[15] := 1
+'  repeat
+'  repeat
+
   make_spdif_control_block(0,1,CC_ORIGINAL,0,SR_32,CQ_NORMAL)
 
   sample := -50 
@@ -40,7 +45,7 @@ PUB Main | count,sample,samples_read,wpos
   buffer[382] := mksmp16(+500)
   buffer[383] := mksmp16(-500)
           
-  spdif.start(SPD_SR,LG_DIVIDER,@buffer,@samples_read,SPD_VGROUP,SPD_VPINS)
+  spdif.start(SPD_SR,LG_DIVIDER,@buffer,@samples_read,SPD_VGROUP,SPD_VPINS,WORDCLOCK_PIN)
   gen.start(SPD_SR,@buffer,192,@samples_read,@subcodes)
 
   ' Minimally busy wait
