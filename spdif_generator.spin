@@ -3,7 +3,7 @@
 ' ARBITRARY MASK FOR MULTIPLE PINS
 
 VAR
-  long mycog
+  byte mycog
 
   ' Parameters passed to the assembly routine running in cog with ID 'mycog'
   long _buffer
@@ -237,6 +237,8 @@ bmc_encode_word_ret     ret
         fit
 
 PUB start(sample_rate,lg_div,buffer_in,posptr_out,vgroup,vpins)
+  stop
+
   ' Initialising the position pointer here guarantees that it will be initialised to a sane value (i.e. 0) by the time
   ' this function returns - if we initialised it inside the worker cog, there's a slim possibility that the caller
   ' could read it before that point 
@@ -250,10 +252,11 @@ PUB start(sample_rate,lg_div,buffer_in,posptr_out,vgroup,vpins)
   _vcfg := vcfg_vid|(vgroup<<9)|vpins
   _posptr := posptr_out
   _pinmask := vpins<<(vgroup<<3)
-  mycog:=cognew(@_outcog2,@_buffer)
+  mycog := 1+cognew(@_outcog2,@_buffer)
 
 PUB stop
-  cogstop(mycog)
+  if mycog
+    cogstop(mycog~ - 1)
 
 ' /////////////////////////////////
 

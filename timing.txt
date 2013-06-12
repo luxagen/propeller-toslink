@@ -1,0 +1,24 @@
+- bit-clock timing relative to Propeller PLL is unknown
+- this can be corrected by feeding the bit clock to a pin and synchronising to it at the start of the loop
+
+- word-clock timing relative to bit clock is unknown
+- this can be solved by monitoring LAEN/MPX lines - LAEN falling edge occurs at least 15 ns before first bit of a word
+
+- MPX lines probably switch on first bitclock of a sample, because that's when LAEN is low
+
+1. PCM56 emulator cannot run in cog 0 because we need that cog to launch the S/PDIF encoder, so it must be cog 1, 3, 5, or 7
+2. This leaves us with hub-access windows where (CNT%16) is 2, 6, 10, or 14, giving an error in sample timing of 0-3 cycles
+3. Measure (CNT%16) for rising edge of SCLK -> sclk_phase
+4. We ideally want an odd-numbered cog whose hub-access window is 9 cycles after that, as SDATA sampling will follow it immediately
+5. BUT we might have to settle for up to 3 cycles distance from the ideal, meaning earlier relative to SCLK, so that sampling is delayed by up to 3 cycles relative to SCLK
+6. This places the acceptable cog's hub window between sclk_phase+6 and sclk_phase+9 inclusive
+7. The ideal cog's ID would be round_up((sclk_phase+6)/2)
+8. This ideal cogid needs to be rounded up to an odd number to avoid killing the SPIN cog (0)
+9. So the ID of the acceptable cog is round_up_odd(round_up((sclk_phase+6)/2))
+10. This is equivalent to ((sclk_phase+7)>>1)>>1
+
+Emulator code should be in groups of 4 thus:
+
+test ina,mask_sdata wc
+rcl gathering,#1
+nop x 2 ' This is where post-processing and MM write can occur
