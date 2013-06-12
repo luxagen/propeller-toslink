@@ -12,12 +12,12 @@ VAR
   long _vscl
   long _posptr
   long _pinmask
+  long _wordclock_mask
   long _vcfg
 
 CON
   #0,CM_DISABLE,CM_PLLINT,CM_PLL,CM_PLLD,CM_NCO,CM_NCOD,CM_DUTY,CM_DUTYD,CM_POS,CM_POSF,CM_RISE,CM_RISEF,CM_NEG,CM_NEGF,CM_FALL,CM_FALLF
   #0,PLLD_1_8,PLLD_1_4,PLLD_1_2,PLLD_1,PLLD_2,PLLD_4,PLLD_8,PLLD_16
-'  #0,VM_NONE,VM_VGA,VM_COMP_BASELOW,VM_COMP_BASEHIGH
 
   preamble_Z=%00010111
   preamble_Y=%00100111
@@ -44,6 +44,7 @@ _outcog2
         add temp,#4
         rdlong out_mask,temp
         add temp,#4
+        rdlong wordclock_mask,temp
 
         andn dira,out_mask      ' Quickly suppress all output from this cog
 
@@ -55,6 +56,7 @@ _outcog2
         ' The last two instructions take 8 cycles, which is 1 more than the WAITVID handover time, so the video
         ' generator should now be safely outputting the zero word we queued above, so we can re-enable its output
         or dira,out_mask
+        or dira,wordclock_mask
 
         ' Assuming that the margins in the following loop are razor-thin, the previous 2 instructions might have used
         ' up some of the preceding WAITVID's breathing-room; if this is needed by the loop, the first output might
@@ -93,6 +95,7 @@ _outcog2
                         add inptr,#4
                          
                           ' We've just read the second sample, so we're done with the original frame in the input buffer
+                        xor outa,wordclock_mask
                         add pos,#1
                         wrlong pos,posptr
                          
@@ -226,6 +229,7 @@ bmc_encode_word_ret     ret
 
         ' uninitialised assembly variables
         out_mask res 1
+        wordclock_mask res 1
         blk_counter res 1
         sample res 1
         temp res 1
@@ -236,7 +240,7 @@ bmc_encode_word_ret     ret
 
         fit
 
-PUB start(sample_rate,lg_div,buffer_in,posptr_out,vgroup,vpins)
+PUB start(sample_rate,lg_div,buffer_in,posptr_out,vgroup,vpins,wordclock_pin)
   stop
 
   ' Initialising the position pointer here guarantees that it will be initialised to a sane value (i.e. 0) by the time
@@ -252,6 +256,12 @@ PUB start(sample_rate,lg_div,buffer_in,posptr_out,vgroup,vpins)
   _vcfg := vcfg_vid|(vgroup<<9)|vpins
   _posptr := posptr_out
   _pinmask := vpins<<(vgroup<<3)
+
+  if wordclock_pin<32
+    _wordclock_mask := |<wordclock_pin
+  else
+    _wordclock_mask := 0
+
   mycog := 1+cognew(@_outcog2,@_buffer)
 
 PUB stop

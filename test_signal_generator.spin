@@ -186,7 +186,7 @@ VAR
   long _step
   long _subcodes_ptr
 
-PUB start(__sample_rate,__buffer,__buffer_frames,__readsmp_ptr,__subcodes_ptr)
+PUB start(__sample_rate,__buffer,__buffer_frames,__subcodes_ptr,__readsmp_ptr,__wordclock_pin,__start_offset)
   stop
 
   _buffer:=__buffer
@@ -194,6 +194,7 @@ PUB start(__sample_rate,__buffer,__buffer_frames,__readsmp_ptr,__subcodes_ptr)
   _readsmp_ptr:=__readsmp_ptr
   _step:=calc_step(SAW_FREQ,__sample_rate)
   _subcodes_ptr:=__subcodes_ptr
+  _wordclock_mask := |<__wordclock_pin
 
   mycog := 1+cognew(@_gencog,@_buffer)
 
