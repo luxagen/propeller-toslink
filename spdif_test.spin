@@ -5,9 +5,9 @@ CON
   _clkmode = xtal1+pll16x
   _xinfreq=5000000
 
-  PIN_RCA=0
-  PIN_LED=1
-  PIN_TOSLINK=15
+  PIN_SPDIF=0
+'  PIN_LED=1
+  PIN_TOSLINK=18
 
   SPD_SR=96000               ' Sample rate
   SPD_PIN=PIN_TOSLINK
