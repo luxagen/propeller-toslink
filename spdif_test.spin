@@ -2,7 +2,8 @@ VAR
   long buffer[384]
   long subcodes[12]
 CON
-  _clkmode = xtal1+pll16x
+'  _clkmode = xtal1+pll16x
+  _clkmode = xinput+pll16x
   _xinfreq=5000000
 
   PIN_SPDIF=0
@@ -46,6 +47,12 @@ PUB Main | count,sample,samples_read,wpos,vgroup,vpins
 
   ' Set other lines as inputs
   dira &= !%00000001010101010101010000000000            ' Set 
+
+  dira[23] := 1
+
+  repeat
+    waitcnt(65536000+cnt)
+    !outa[23]
 
   repeat
   repeat
