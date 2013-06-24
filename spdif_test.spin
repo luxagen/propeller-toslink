@@ -25,12 +25,30 @@ CON
                          
   CC_CD      =%00000001
   CC_DAT     =%00000011                                                      
-  CC_ORIGINAL=%00000000   
+  CC_ORIGINAL=%00000000
+
+  PIN_MPXA =10  ' LSb of channel number
+  PIN_MPXB =12  ' MSb of channel number
+  PIN_INH  =14  ' Inhibit signal from mainboard
+  PIN_SCLK =18  ' Sample clock
+  PIN_LAEN =22  ' Latch-enable signal for DAC
+  PIN_SDATA=24  ' 4-channel serial sample data, MSb first   
+  PIN_OD   =26  ' Cutout signal for level-shifter   
 OBJ
   spdif : "spdif_generator"
   gen   : "test_signal_generator"
 
 PUB Main | count,sample,samples_read,wpos,vgroup,vpins
+
+  ' Set !OE line high to disable input
+  outa[PIN_OD] := 0
+  dira[PIN_OD] := 1
+
+  ' Set other lines as inputs
+  dira &= !%00000001010101010101010000000000            ' Set 
+
+  repeat
+  repeat
 
   make_spdif_control_block(0,1,CC_ORIGINAL,0,SR_32,CQ_NORMAL)
 
