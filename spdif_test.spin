@@ -39,7 +39,8 @@ CON
   PIN_OD   =26  ' Cutout signal for level-shifter   
 OBJ
   spdif : "spdif_generator"
-  gen   : "test_signal_generator"
+'  gen   : "test_signal_generator"
+  gen : "pcm56_emulator"
 
 PUB Main | count,sample,samples_read,wpos,vgroup,vpins
 
