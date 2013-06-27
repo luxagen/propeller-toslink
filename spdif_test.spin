@@ -3,14 +3,16 @@ VAR
   long subcodes[12]
 CON
 '  _clkmode = xtal1+pll16x
+'  _xinfreq=5000000
+
   _clkmode = xinput+pll16x
-  _xinfreq=5000000
+  _xinfreq=4096000
 
   PIN_SPDIF=0
 '  PIN_LED=1
   PIN_TOSLINK=2
 
-  SPD_SR=96000               ' Sample rate
+  SPD_SR=32000              ' Sample rate
   SPD_PIN=PIN_SPDIF
   SPD_PIN_WORDCLOCK=27
 
@@ -48,15 +50,6 @@ PUB Main | count,sample,samples_read,wpos,vgroup,vpins
   ' Set other lines as inputs
   dira &= !%00000001010101010101010000000000            ' Set 
 
-  dira[23] := 1
-
-  repeat
-    waitcnt(65536000+cnt)
-    !outa[23]
-
-  repeat
-  repeat
-
   make_spdif_control_block(0,1,CC_ORIGINAL,0,SR_32,CQ_NORMAL)
 
   sample := -32 
@@ -78,11 +71,20 @@ PUB Main | count,sample,samples_read,wpos,vgroup,vpins
   gen.start(SPD_SR,@buffer,192,@subcodes,SPD_PIN_WORDCLOCK,@samples_read,4)
 
   ' Minimally busy wait
-  repeat
-    waitcnt(clkfreq+cnt)
+'  repeat
+'    waitcnt(clkfreq+cnt)
+
+  Toggler
 
   spdif.stop
   gen.stop
+
+PRI Toggler
+  dira[23] := 1
+
+  repeat
+    waitcnt(65536000+cnt)
+    !outa[23]
 
 PRI get_vgroup(pin)
   return pin/8
