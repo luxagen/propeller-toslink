@@ -38,15 +38,35 @@ _gencog
         shl writebyte,#3        
 
         :loop
-'              call #gather_frame
-'              call #format_spdif
-              waitcnt cnt_frame_next,sample_period_1
-              waitcnt cnt_frame_next,sample_period_3
+'              waitcnt cnt_frame_next,sample_period_1
+'              waitcnt cnt_frame_next,sample_period_3
 
+              mov temp,#256
+              shl temp,#3
+              waitcnt cnt_frame_next,temp
+
+'              call #gather_frame
+
+              {
               mov spdif_sampleL,#3
               shl spdif_sampleL,#12
               mov spdif_sampleR,#5
               shl spdif_sampleR,#12
+              }
+
+              mov temp,#1
+              shl temp,#16
+
+              add stereo_frame,temp
+              rol stereo_frame,#16
+              add stereo_frame,temp
+              rol stereo_frame,#16
+
+'              mov stereo_frame,#3
+'              shl stereo_frame,#16
+'              or stereo_frame,#5
+
+              call #format_spdif
 
               call #write_spdif
 
@@ -87,7 +107,18 @@ _gencog
 ' This initialises by waiting for the input lines to reach a predetermined state; from there we can predict timing
 ' because the Prop is running off the PCM56 sample clock
 synchronise
-        andn ina,im_inp ' Set up the input pins
+        ' Initialise pin-group masks
+        mov im_ctrl,im_sclk
+        or im_ctrl,im_mpxA
+        or im_ctrl,im_mpxB
+        mov im_start3,im_ctrl
+        or im_ctrl,im_laen
+'        or im_ctrl,im_inh      ' INH is used for deglitching at the multiplexer, so we can safely ignore it
+
+        ' Set up the input pins         
+        mov temp,im_ctrl
+        or temp,im_sdata 
+        andn dira,temp
 
         ' The state sequence for the PCM56 (starting with the last bit of a word) is:
         '       SCLK && LAEN
@@ -98,8 +129,8 @@ synchronise
         '       SCLK && LAEN
          
         ' Wait for !INH && SCLK && !LAEN && MPX==%11 (first bit of channel 3)
-        waitpeq im_start3,#im_ctrl
-         
+        waitpeq im_start3,im_ctrl
+
         ' Calculate when channel 0 will start and add 2 clocks to read just after the edge 
         mov cnt_frame_next,cnt
         add cnt_frame_next,sample_period_1
@@ -170,6 +201,7 @@ gather_frame
         if_nz jmp #:loopR 
 gather_frame_ret       ret
 ' Finishing the loop and returning will burn the first 8 cycles of the 512 we have in which to flush the stereo sample to the consumer
+}
 
 format_spdif
         ' Calculate the addresses of the longs we want from the subcode tables and modify upcoming read instructions to address them
@@ -192,13 +224,19 @@ format_spdif
         shr tempU,temp                                  ' This should ignore all but the low 5 bits, so don't bother clearing the rest
 
         ' Extract left 16-bit sample into bits 15..30
-        mov spdif_sampleL,stereo_sample
+        mov spdif_sampleL,stereo_frame
         shr spdif_sampleL,#1
 
         ' Extract right 16-bit sample into bits 15..30
-        mov spdif_sampleR,stereo_sample
+        mov spdif_sampleR,stereo_frame
         shl spdif_sampleR,#15
 
+        test temp,#0 wc
+
+        shr spdif_sampleL,#2
+        shr spdif_sampleR,#2
+
+{
         ' Shift control and user bits into each sample
         test tempC,#1 wc
         rcr spdif_sampleL,#1
@@ -206,7 +244,7 @@ format_spdif
         test tempU,#1 wc
         rcr spdif_sampleL,#1
         rcr spdif_sampleR,#1
-
+}
         ' Zero I bit and unused sample/preamble bits and rotate parity in (left)
         and spdif_sampleL,mask_cusample wc
         rcr spdif_sampleL,#1
@@ -215,7 +253,6 @@ format_spdif
         and spdif_sampleR,mask_cusample wc
         rcr spdif_sampleR,#1
 format_spdif_ret ret
-}
 
 write_spdif
         ' Calculate the address of the buffer location (in main memory) to write the left frame to
@@ -225,14 +262,11 @@ write_spdif
         wrlong spdif_sampleL,temp                              ' Write the left frame
 
         add temp,#4                                             ' Calculate right frame's address
-'        add frames_written,#1                  ' Prepare to update progress
+        add writebyte,#8                                  ' Update write offset in buffer...
 
         wrlong spdif_sampleR,temp                              ' Right the write frame
 
-        add writebyte,#8                                  ' Update write offset in buffer...
         cmpsub writebyte,buffer_bytes                 ' ...and wrap it if needed
-
-'        wrlong frames_written,writtensmp_ptr
 write_spdif_ret ret
 
 copy_subcodes
@@ -264,8 +298,10 @@ copy_subcodes_ret ret
 
 ' //////////////////////////////////////////////////////////////////////////////
 
+stereo_frame long $00030005
+
 sample_period_1 long 512
-sample_period_3 long 3*sample_period_1
+sample_period_3 long 3*512
 
 'frames_written long 0
  
@@ -274,6 +310,8 @@ mask_u long $20000000
 mask_c long $40000000
 mask_p long $80000000
 
+mask_cusample long %11011111111111111110000000000000
+
 ' Input lines
 im_mpxA       long |<PIN_MPXA
 im_mpxB       long |<PIN_MPXB
@@ -281,10 +319,6 @@ im_inh        long |<PIN_INH
 im_sclk       long |<PIN_SCLK
 im_laen       long |<PIN_LAEN
 im_sdata      long |<PIN_SDATA
-' Input-line groups
-im_inp        long im_mpxA|im_mpxB|im_inh|im_sclk|im_laen|im_sdata
-im_ctrl       long im_inp & !im_sdata
-im_start3     long im_sclk|im_mpxA|im_mpxB
  
 ' ======== PARAMETERS ========
  
@@ -301,16 +335,22 @@ writebyte res 1         ' Next write address in buffer
  
 ' ============================
  
-' Working space         
-cnt_sample_next res 1        ' Used to synchronise before reading each frame
+' Working space
+im_ctrl res 1           ' Pin mask for control lines (everything but SDATA)
+im_start3 res 1         ' Pin-state mask  for the start of a sample on channel 3         
+cnt_sample_next res 1   ' Used to synchronise before reading each frame
 cnt_frame_next res 1    ' Used to synchronise to the first bit of a frame
 counter res 1           ' Controls 32-frame loop for outputting 1/6th of a block
 reg_ctrl res 1          ' Shift register for current control-subcode word
 reg_user res 1          ' Shift register for current user-subcode word
 temp res 1              ' General-purpose temporary
+temp2 res 1
 spdif_sampleL res 1     ' Temporary for formatting S/PDIF data
 spdif_sampleR res 1     ' Temporary for formatting S/PDIF data
-stereo_frame res 1      ' Used to accumulate a left/right 16-bit pair
+'stereo_frame res 1      ' Used to accumulate a left/right 16-bit pair
+
+tempC res 1
+tempU res 1
  
 fit
 
