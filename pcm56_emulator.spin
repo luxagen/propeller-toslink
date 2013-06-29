@@ -53,11 +53,14 @@ _gencog
         shl writebyte,#3        
 
         ' WAITPNE works, so line is permanently low
+        SDATA STILL DOESN'T LEAVE ZERO
         mov temp,im_sdata
-'        andn ina,
+'        mov temp,#1
+'        shl temp,#24
+        andn dira,temp
         test temp,#0 wc
         waitpeq temp,temp
-        waitpne temp,temp
+'        waitpne temp,temp
 '  PIN_MPXA =10  ' LSb of channel number
 '  PIN_MPXB =12  ' MSb of channel number
 '  PIN_INH  =14  ' Inhibit signal from mainboard
