@@ -21,35 +21,14 @@ _gencog
 
         add temp,#4
         rdlong wordclock_mask,temp
-{
-        call #erase_buffer
-        call #erase_buffer2
-        call #erase_buffer
-        call #erase_buffer2
-        call #erase_buffer
-        call #erase_buffer2
-        call #erase_buffer
-        call #erase_buffer2
-        call #erase_buffer
-        call #erase_buffer2
-        call #erase_buffer
-        call #erase_buffer2
 
-        mov temp,par
-        add temp,#12
-}
-        ' Read a bang-up-to-date buffer position from the consumer, jump ahead a bit, wrap the value into the buffer,
-        ' and convert it to a byte offset
-        add temp,#4
-        rdlong writebyte,temp
-        rdlong writebyte,writebyte
-        add temp,#4
-        rdlong counter,temp     ' Using counter as a temporary for lead value
-        add writebyte,counter
-        cmpsub writebyte,#192
-        shl writebyte,#3        
+        ' Read and store the state of the wordclock pin
+        mov wordclock,ina
+        and wordclock,wordclock_mask
 
-        ' Copy client-supplied subcode table into cog-local memory for speed 
+        ' Copy client-supplied subcode table into cog-local memory for speed
+        add temp,#4 
+        add temp,#4
         add temp,#4
         rdlong temp,temp
         call #copy_subcodes
@@ -58,6 +37,20 @@ _gencog
         andn dira,wordclock_mask
         mov wordclock,ina
         and wordclock,wordclock_mask        
+
+        call #synchronise
+
+        ' Read a bang-up-to-date buffer position from the consumer, jump ahead a bit, wrap the value into the buffer,
+        ' and convert it to a byte offset
+        mov temp,par
+        add temp,#16
+        rdlong writebyte,temp
+        rdlong writebyte,writebyte
+        add temp,#4
+        rdlong counter,temp     ' Using counter as a temporary for lead value
+        add writebyte,counter
+        cmpsub writebyte,#192
+        shl writebyte,#3        
 
 :loop
         ' Set up two subcode registers from table and emit 32 samples
@@ -92,74 +85,102 @@ _gencog
         call #gen_smp_group
 jmp #:loop
 
-erase_buffer
-        ' reg_ctrl gets number of longs to write at start of buffer
-        ' counter gets number of longs to write at writebyte
-         
-        mov spdif_sample,#3
-        shl spdif_sample,#22
-         
-        mov counter,#192
+' This initialises by waiting for the input lines to reach a predetermined state; from there we can predict timing
+' because the Prop is running off the PCM56 sample clock
+synchronise
+        ' Initialise pin-group masks
+        mov im_ctrl,im_sclk
+        or im_ctrl,im_mpxA
+        or im_ctrl,im_mpxB
+        mov im_start3,im_ctrl
+        or im_ctrl,im_laen
+'        or im_ctrl,im_inh      ' INH is used for deglitching at the multiplexer, so we can safely ignore it
 
-        mov temp,#192
-        shl temp,#3
-         
-        :clear_loop1
-              mov reg_user,writebyte
-              add reg_user,buffer
-         
-              wrlong spdif_sample,reg_user
-              add reg_user,#4
-              wrlong spdif_sample,reg_user
-              add writebyte,#8
-              cmpsub writebyte,temp
-        djnz counter,#:clear_loop1
-erase_buffer_ret ret
-         
-erase_buffer2
-        ' reg_ctrl gets number of longs to write at start of buffer
-        ' counter gets number of longs to write at writebyte
-         
-        mov spdif_sample,#3
-        shl spdif_sample,#22
-        neg spdif_sample,spdif_sample
-         
-        mov counter,#192
+        ' Set up the input pins         
+        mov temp,im_ctrl
+        or temp,im_sdata 
+        andn dira,temp
 
-        mov temp,#192
-        shl temp,#3
+        ' The state sequence for the PCM56 (starting with the last bit of a word) is:
+        '       SCLK && LAEN
+        '       !SCLK && LAEN
+        '       !SCLK && !LAEN
+        '       SDATA/MPX transition to first bit of new word
+        '       SCLK && !LAEN
+        '       SCLK && LAEN
          
-        :clear_loop1
-              mov reg_user,writebyte
-              add reg_user,buffer
-         
-              wrlong spdif_sample,reg_user
-              add reg_user,#4
-              wrlong spdif_sample,reg_user
-              add writebyte,#8
-              cmpsub writebyte,temp
-        djnz counter,#:clear_loop1
-erase_buffer2_ret ret
-         
+        ' Wait for !INH && SCLK && !LAEN && MPX==%11 (first bit of channel 3)
+        waitpeq im_start3,im_ctrl
+
+        ' Calculate when channel 0 will start and add 2 clocks to read just after the edge
+        mov cnt_sync,cnt
+        mov temp,sample_period
+        shl temp,#2
+        add cnt_sync,temp
+{
+        mov cnt_frame_next,cnt
+        add cnt_frame_next,sample_period_1
+        add cnt_frame_next,#2
+        mov cnt_sample_next,cnt_frame_next
+}
+        ' We need to be able to start gathering in 244 clocks         
+synchronise_ret ret
+
+gather_frame
+        mov temp,#16                            ' Set up now to capture 16 bits so we can sample immediately on sync
+        waitcnt cnt_sync,sample_period          ' Wait for first bit of channel 0 and add sample interval for next sample wait
+
+        ' Capture 16 bits - no need to clear the previous sample, it will just stay in the high half of the register
+        :loopL test ina,im_sdata wc
+              rcl stereo_frame,#1
+              ' Out of 16 cycles per bit, we now have 8 cycles in which to loop, so use them all (sub/if_nz jmp instead of 
+              ' djnz); the loop will finish in 4 cycles less that way, saving time for post-processing
+              sub temp,#1 wz                   
+        if_nz jmp #:loopL 
+
+        mov temp,#16                            ' Set up now to capture 16 bits so we can sample immediately on sync
+        waitcnt cnt_sync,sample_period_3        ' Wait for first bit of channel 0 and add 3-sample interval for next frame wait
+
+        ' Capture 16 bits - no need to clear the previous sample, it will just stay in the high half of the register
+        :loopR test ina,im_sdata wc
+              rcl stereo_frame,#1
+              ' Out of 16 cycles per bit, we now have 8 cycles in which to loop, so use them all (sub/if_nz jmp instead of 
+              ' djnz); the loop will finish in 4 cycles less that way, saving time for post-processing
+              sub temp,#1 wz                   
+        if_nz jmp #:loopR 
+gather_frame_ret       ret
+
 ' Generating 96 kHz S/PDIF at a clock rate of 32.768 MHz allows 341 cycles per stereo sample, and this loop has a worst-
 ' case runtime of 176 cycles (156 cycles without the indicator-LED code), so this should never be a bottleneck 
 gen_smp_group
+{
         ' Waiting for wordclock allows us to save power by avoiding a busy RDLONG loop to check consumer's progress
-        mov wordclock,ina
-        and wordclock,wordclock_mask
         xor wordclock,wordclock_mask ' Calculate the next state (bit complement)
         ' Wait for it to happen
         test temp,#0 wc
         waitpeq wordclock,wordclock_mask
-         
+}
+{
+        mov temp,sample_period
+        shl temp,#2
+        waitcnt cnt_frame_next,temp
+}         
+
+        call #gather_frame
+
         ' Prevent the sample from incrementing for the first (leadin) frames
         cmp frames_written,leadin_frames wz,wc
 
+        mov spdif_sample,stereo_frame
+        shr spdif_sample,#4
+        
+
+{        
         if_e mov sample,#0 ' First non-lead-in sample is zero...
         if_a add sample,increment ' ...and they increment from there
         mov spdif_sample,sample
         sar spdif_sample,#(28-SAW_BITS)
-
+}
         and spdif_sample,mask_sample ' Clear special bits (the preamble will be left blank by the shift above)
 
         ' Set user and control bits from subcode table
@@ -223,6 +244,17 @@ mask_sample long $0FFFFFF0
 mask_u long $20000000
 mask_c long $40000000
 mask_p long $80000000
+
+sample_period long 512
+sample_period_3 long 1536
+ 
+' Input lines
+im_mpxA       long |<PIN_MPXA
+im_mpxB       long |<PIN_MPXB
+im_inh        long |<PIN_INH
+im_sclk       long |<PIN_SCLK
+im_laen       long |<PIN_LAEN
+im_sdata      long |<PIN_SDATA
  
 ' ======== PARAMETERS ========
  
@@ -247,14 +279,28 @@ reg_user res 1          ' Shift register for current user-subcode word
 temp res 1              ' General-purpose temporary
 spdif_sample res 1      ' Temporary for formatting S/PDIF data
 wordclock res 1
+
+cnt_sync res 1
  
+im_ctrl res 1           ' Pin mask for control lines (everything but SDATA)
+im_start3 res 1         ' Pin-state mask  for the start of a sample on channel 3
+
+stereo_frame res 1         
+
 fit
 
 CON
-  SAW_FREQ=1000 ' Number of sawtooth cycles per second
+'  SAW_FREQ=1234 ' Number of sawtooth cycles per second
   SAW_BITS=20   ' The sawtooth will appear in the lowest SAW_BITS bits of the 24-bit sample, higher bits being sign-extended
 
   DEBUG_MODE=false
+
+  PIN_MPXA =10  ' LSb of channel number
+  PIN_MPXB =12  ' MSb of channel number
+  PIN_INH  =14  ' Inhibit signal from mainboard
+  PIN_SCLK =18  ' Sample clock
+  PIN_LAEN =22  ' Latch-enable signal for DAC
+  PIN_SDATA=24  ' 4-channel serial sample data, MSb first   
 
 VAR
   long mycog
@@ -268,7 +314,7 @@ VAR
   long _lead_frames
   long _subcodes_ptr
 
-PUB start(__sample_rate,__buffer,__buffer_frames,__subcodes_ptr,__wordclock_pin,__pos_ptr,__lead_frames)
+PUB start(__sample_rate,__buffer,__buffer_frames,__subcodes_ptr,__wordclock_pin,__pos_ptr,__lead_frames,freq_hz)
   stop
 
   _buffer:=__buffer
@@ -277,7 +323,7 @@ PUB start(__sample_rate,__buffer,__buffer_frames,__subcodes_ptr,__wordclock_pin,
   if DEBUG_MODE
     _step := |<(32-SAW_BITS)
   else
-    _step:=calc_step(SAW_FREQ,__sample_rate)
+    _step:=calc_step(freq_hz,__sample_rate)
 
   _wordclock_mask := |<__wordclock_pin
   _pos_ptr:=__pos_ptr

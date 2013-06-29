@@ -356,8 +356,6 @@ tempU res 1
 fit
 
 CON
-  ' Pins 0-5 are reserved for SCLK, SDATA, LAEN, MPXA, MPXB, and INH respectively
-
   PIN_MPXA =10  ' LSb of channel number
   PIN_MPXB =12  ' MSb of channel number
   PIN_INH  =14  ' Inhibit signal from mainboard

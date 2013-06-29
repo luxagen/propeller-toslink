@@ -12,8 +12,8 @@ CON
 '  PIN_LED=1
   PIN_TOSLINK=2
 
-  SPD_SR=96000              ' Sample rate
-  SPD_PIN=PIN_TOSLINK
+  SPD_SR=32000              ' Sample rate
+  SPD_PIN=PIN_SPDIF
   SPD_PIN_WORDCLOCK=27
 
   DEBUGGING=false
@@ -48,9 +48,6 @@ PUB Main | count,sample,samples_read,wpos,vgroup,vpins
   outa[PIN_OD] := 0
   dira[PIN_OD] := 1
 
-  ' Set other lines as inputs
-'  dira &= !%00000001010101010101010000000000            ' Set 
-
   make_spdif_control_block(0,1,CC_ORIGINAL,0,SR_32,CQ_NORMAL)
 
   sample := -32 
@@ -69,7 +66,7 @@ PUB Main | count,sample,samples_read,wpos,vgroup,vpins
 
   waitcnt(2*clkfreq + cnt)
 
-  gen.start(@buffer,192,@subcodes,SPD_PIN_WORDCLOCK,@samples_read,4)
+  gen.start(SPD_SR,@buffer,192,@subcodes,SPD_PIN_WORDCLOCK,@samples_read,4,250)
 
   ' Minimally busy wait
 '  repeat
