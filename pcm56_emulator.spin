@@ -52,6 +52,19 @@ _gencog
         cmpsub writebyte,#192
         shl writebyte,#3        
 
+        ' WAITPNE works, so line is permanently low
+        mov temp,im_sdata
+'        andn ina,
+        test temp,#0 wc
+        waitpeq temp,temp
+        waitpne temp,temp
+'  PIN_MPXA =10  ' LSb of channel number
+'  PIN_MPXB =12  ' MSb of channel number
+'  PIN_INH  =14  ' Inhibit signal from mainboard
+'  PIN_SCLK =18  ' Sample clock
+'  PIN_LAEN =22  ' Latch-enable signal for DAC
+'  PIN_SDATA=24  ' 4-channel serial sample data, MSb first   
+
 :loop
         ' Set up two subcode registers from table and emit 32 samples
         mov reg_ctrl,buf_ctrl+0
