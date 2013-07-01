@@ -20,13 +20,13 @@ _outcog2
         rdlong wordclock_mask,temp
         add temp,#4
 
-        andn dira,pinmask      ' Quickly suppress all output from this cog
+        mov dira,#0             ' Quickly suppress all output from this cog
 
         mov ctra,vcfg_ctra
         rdlong vcfg,temp        ' Enable video generator
         waitvid palette,#0      ' Queue a buffer to keep generator output low until we have real data
 
-        andn outa,pinmask      ' Suppress direct output too
+        andn outa,pinmask       ' Suppress direct output too
 
         ' The last two instructions take 8 cycles, which is 1 more than the WAITVID handover time, so the video
         ' generator should now be safely outputting the zero word we queued above, so we can re-enable its output

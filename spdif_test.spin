@@ -30,6 +30,7 @@ CON
   CC_DAT     =%00000011                                                      
   CC_ORIGINAL=%00000000
 
+{
   PIN_MPXA =10  ' LSb of channel number
   PIN_MPXB =12  ' MSb of channel number
   PIN_INH  =14  ' Inhibit signal from mainboard
@@ -37,16 +38,14 @@ CON
   PIN_LAEN =22  ' Latch-enable signal for DAC
   PIN_SDATA=24  ' 4-channel serial sample data, MSb first   
   PIN_OD   =26  ' Cutout signal for level-shifter   
+}
 OBJ
   spdif : "spdif_generator"
 '  gen   : "test_signal_generator"
   gen : "pcm56_emulator"
 
 PUB Main | count,sample,samples_read,wpos,vgroup,vpins
-
-  ' Set !OE line high to disable input
-  outa[PIN_OD] := 0
-  dira[PIN_OD] := 1
+  dira := 0             ' All pins other than QuickStart's ones should be inputs by default
 
   make_spdif_control_block(0,1,CC_ORIGINAL,0,SR_32,CQ_NORMAL)
 
@@ -93,11 +92,13 @@ PRI get_vpins(pin)
 PRI mksmp16(value)
   return (value<<12)&$0FFFFFF0
 
+{
 PRI init_array(array,length,patternA,patternB) | idx
   idx:=0
   repeat while idx<length
     long[array][idx++] := patternA
     long[array][idx++] := patternB
+}
 
 PRI make_spdif_control_block(digital_data,copy_permit,category_code,source_no,sr_code,clock_quality)
   subcodes[0] := 0|(digital_data<<1)|(copy_permit<<2)|(category_code<<8)|(source_no<<16)|(sr_code<<24)|(clock_quality<<28)
