@@ -30,15 +30,7 @@ CON
   CC_DAT     =%00000011                                                      
   CC_ORIGINAL=%00000000
 
-{
-  PIN_MPXA =10  ' LSb of channel number
-  PIN_MPXB =12  ' MSb of channel number
-  PIN_INH  =14  ' Inhibit signal from mainboard
-  PIN_SCLK =18  ' Sample clock
-  PIN_LAEN =22  ' Latch-enable signal for DAC
-  PIN_SDATA=24  ' 4-channel serial sample data, MSb first   
-  PIN_OD   =26  ' Cutout signal for level-shifter   
-}
+  PIN_TOGGLER=23
 OBJ
   spdif : "spdif_generator"
 '  gen   : "test_signal_generator"
@@ -67,21 +59,17 @@ PUB Main | count,sample,samples_read,wpos,vgroup,vpins
 
   gen.start(SPD_SR,@buffer,192,@subcodes,SPD_PIN_WORDCLOCK,@samples_read,4,250)
 
-  ' Minimally busy wait
-'  repeat
-'    waitcnt(clkfreq+cnt)
-
   Toggler
 
   spdif.stop
   gen.stop
 
 PRI Toggler
-  dira[23] := 1
+  dira[PIN_TOGGLER] := 1
 
   repeat
     waitcnt(65536000+cnt)
-    !outa[23]
+    !outa[PIN_TOGGLER]
 
 PRI get_vgroup(pin)
   return pin/8
@@ -91,14 +79,6 @@ PRI get_vpins(pin)
 
 PRI mksmp16(value)
   return (value<<12)&$0FFFFFF0
-
-{
-PRI init_array(array,length,patternA,patternB) | idx
-  idx:=0
-  repeat while idx<length
-    long[array][idx++] := patternA
-    long[array][idx++] := patternB
-}
 
 PRI make_spdif_control_block(digital_data,copy_permit,category_code,source_no,sr_code,clock_quality)
   subcodes[0] := 0|(digital_data<<1)|(copy_permit<<2)|(category_code<<8)|(source_no<<16)|(sr_code<<24)|(clock_quality<<28)
